@@ -1705,16 +1705,17 @@ function renderBaitDetail(reel) {
   const maxWind = calcMaxWinding(reel);
   const isCompared = compareIds.includes(reel.id);
 
-  // スピニング側と統一した NOTE ブロック（Q列 = reel.note を優先）
-  const baitNoteText = reel.note || '';
-  const baitNoteHtml = baitNoteText
-    ? `
-      <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
-        <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
-        <span class="whitespace-pre-line leading-relaxed">${escapeHtml(baitNoteText)}</span>
-      </div>
-    `
-    : '';
+// 空欄でも常に表示する NOTE ブロック（空のときは「—」）
+  const baitNoteDisplay = reel.note
+    ? escapeHtml(reel.note)
+    : '<span class="text-slate-600">—</span>';
+
+  const baitNoteHtml = `
+    <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
+      <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
+      <span class="whitespace-pre-line leading-relaxed">${baitNoteDisplay}</span>
+    </div>
+  `;
 
   const bearingRowsHtml = BAIT_BEARING_SLOTS.map(slot => {
     const bb = reel.bearings ? reel.bearings[slot.key] : null;
@@ -2109,16 +2110,17 @@ function renderSpinningDetail(reel) {
       : '—';
   };
 
-  // 糸巻き量の後に表示する備考NOTE（L列 = reel.note、既存 AE列 = reel.notes もフォールバック/併記対応）
-  const spinNoteText = reel.note ||  '';
-  const spinNoteHtml = spinNoteText
-    ? `
-      <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
-        <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
-        <span class="whitespace-pre-line leading-relaxed">${escapeHtml(spinNoteText)}</span>
-      </div>
-    `
-    : '';
+// 糸巻き量（LINE CAPACITY）の後に常に表示する備考 NOTE（空のときは「—」）
+  const spinNoteDisplay = reel.note
+    ? escapeHtml(reel.note)
+    : '<span class="text-slate-600">—</span>';
+
+  const spinNoteHtml = `
+    <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
+      <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
+      <span class="whitespace-pre-line leading-relaxed">${spinNoteDisplay}</span>
+    </div>
+  `;
 
   container.innerHTML = `
     <!-- 機種基本情報 -->
