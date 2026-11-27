@@ -1421,7 +1421,12 @@ function parseBB(outerVal, innerVal, widthVal) {
 
 
 		function updateBaitModelDropdown() {
-		  const filtered = getFilteredBaitReels();
+		  const filtered = getFilteredBaitReels().sort((a, b) =>
+  a.model.localeCompare(b.model, 'en', {
+    numeric: true,
+    sensitivity: 'base'
+  })
+);
 		  const modelSelect = document.getElementById('bait-model-select');
 		  const pillsContainer = document.getElementById('bait-quick-pills');
 		  document.getElementById('bait-match-count').textContent = filtered.length;
@@ -1714,10 +1719,15 @@ function parseBB(outerVal, innerVal, widthVal) {
 
 		function updateSpinningModelDropdown() {
 		  const brandVal = document.getElementById('spin-brand-select').value;
-		  const filtered = reelsDB.filter(r =>
-		    r.type === 'spinning' &&
-		    (brandVal === 'ALL' || r.brand === brandVal)
-		  );
+		 const filtered = reelsDB.filter(r =>
+  r.type === 'spinning' &&
+  (brandVal === 'ALL' || r.brand === brandVal)
+).sort((a, b) =>
+  a.model.localeCompare(b.model, 'en', {
+    numeric: true,
+    sensitivity: 'base'
+  })
+);
 		  const modelSelect = document.getElementById('spin-model-select');
 
 		  if (filtered.length === 0) {
