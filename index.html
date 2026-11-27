@@ -729,8 +729,8 @@
      * 1. GAS Code.gs テンプレート (DATA(ベイト) C..AO列・5行目以降 / DATA(スピニング) B..Y列・5行目以降)
      */
     const GAS_TEMPLATE_CODE = `/**
- * 中華リールスペック表(仮) 非公開スプレッドシート連携API (Code.gs)
- * スプレッドシートは「制限付き(非公開)」のまま、DATA(ベイト) と DATA(スピニング) のみをJSONで配信します。
+- 中華リールスペック表(仮) 非公開スプレッドシート連携API (Code.gs)
+- スプレッドシートは「制限付き(非公開)」のまま、DATA(ベイト) と DATA(スピニング) のみをJSONで配信します。
  */
 function doGet(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -739,10 +739,10 @@ function doGet(e) {
 
   const reels = [];
 
-  // 1. DATA(ベイト): B列(2)〜AO列(41), 5行目以降（C列=Brand, D列=Model）
+  // 1. DATA(ベイト): B列(2)〜AP列(42), 5行目以降（C列=Brand, D列=Model）
   if (baitSheet && baitSheet.getLastRow() >= 5) {
     const numRows = baitSheet.getLastRow() - 4;
-    const values = baitSheet.getRange(5, 2, numRows, 40).getValues(); // B=2 .. AO=41 (40列)
+    const values = baitSheet.getRange(5, 2, numRows, 41).getValues(); // B=2 .. AP=42 (41列)
     values.forEach((row, idx) => {
       const brand = String(row[1] || '').trim();
       const model = String(row[2] || '').trim();
@@ -765,25 +765,27 @@ function doGet(e) {
         lineCapacity1: String(row[12] || '').trim(), // N列
         lineCapacity2: String(row[13] || '').trim(), // O列
         lineCapacity3: String(row[14] || '').trim(), // P列
+        note: String(row[15] || '').trim(), // Q列（ベアリング直前に追加したNOTE）
         bearings: {
-          spool:       parseBB(row[15], row[16], row[17]), // Q,R,S
-          sideCover:   parseBB(row[18], row[19], row[20]), // T,U,V
-          pinionOuter: parseBB(row[21], row[22], row[23]), // W,X,Y
-          clutchCam:   parseBB(row[24], row[25], row[26]), // Z,AA,AB
-          handle:      parseBB(row[27], row[28], row[29]), // AC,AD,AE
-          gearShaft:   parseBB(row[30], row[31], row[32]), // AF,AG,AH
-          wormGear:    parseBB(row[33], row[34], row[35]), // AI,AJ,AK
-          wormCover:   parseBB(row[36], row[37], row[38])  // AL,AM,AN
+          spool:       parseBB(row[16], row[17], row[18]), // R,S,T
+          sideCover:   parseBB(row[19], row[20], row[21]), // U,V,W
+          pinionOuter: parseBB(row[22], row[23], row[24]), // X,Y,Z
+          clutchCam:   parseBB(row[25], row[26], row[27]), // AA,AB,AC
+          handle:      parseBB(row[28], row[29], row[30]), // AD,AE,AF
+          gearShaft:   parseBB(row[31], row[32], row[33]), // AG,AH,AI
+          wormGear:    parseBB(row[34], row[35], row[36]), // AJ,AK,AL
+          wormCover:   parseBB(row[37], row[38], row[39])  // AM,AN,AO
         },
-        notes: String(row[39] || '').trim() // AO列
+        notes: String(row[40] || '').trim() // AP列
       });
     });
   }
 
-  // 2. DATA(スピニング): B列(2)〜Y列(25), 5行目以降
+  // 2. DATA(スピニング): C列(3)〜AE列(31), 5行目以降
   if (spinSheet && spinSheet.getLastRow() >= 5) {
     const numRows = spinSheet.getLastRow() - 4;
-    const values = spinSheet.getRange(5, 2, numRows, 24).getValues(); // B=2 .. Y=25 (24列)
+    const values = spinSheet.getRange(5, 3, numRows, 29).getValues(); // C=3 .. AE=31 (29列)
+
     values.forEach((row, idx) => {
       const brand = String(row[0] || '').trim();
       const model = String(row[1] || '').trim();
@@ -794,21 +796,33 @@ function doGet(e) {
         type: 'spinning',
         brand: brand || '不明',
         model: model || '名称未設定',
-        gearRatio: parseNum(row[2]),
-        windingLength: parseNum(row[3]),
-        spoolDia: parseNum(row[4]),
+
+        // 基本スペック
+        spoolSize: String(row[2] || '').trim(),     // E列
+        spoolDia: parseNum(row[3]),                 // F列
+        gearRatio: parseNum(row[4]),                // G列
+        windingLength: parseNum(row[5]),            // H列
+        fixedHandle: String(row[6] || '').trim(),   // I列（自重の前）
+        reelWeight: parseNum(row[7]),               // J列
+        lineCapacity: String(row[8] || '').trim(),  // K列
+        note: String(row[9] || '').trim(),          // L列（糸巻き量の後のNOTE）
+
+        // ベイト互換用
         spoolWidth: null,
         spoolWeightMain: null,
         spoolWeightSub: null,
+
+        // ベアリング情報
         bearings: {
-          spool:  parseBB(row[5],  row[6],  row[7]),  // G,H,I
-          roller: parseBB(row[8],  row[9],  row[10]), // J,K,L
-          pinion: parseBB(row[11], row[12], row[13]), // M,N,O
-          driveA: parseBB(row[14], row[15], row[16]), // P,Q,R
-          driveB: parseBB(row[17], row[18], row[19]), // S,T,U
-          handle: parseBB(row[20], row[21], row[22])  // V,W,X
+          spool:  parseBB(row[10], row[11], row[12]), // M,N,O
+          roller: parseBB(row[13], row[14], row[15]), // P,Q,R
+          pinion: parseBB(row[16], row[17], row[18]), // S,T,U
+          driveA: parseBB(row[19], row[20], row[21]), // V,W,X
+          driveB: parseBB(row[22], row[23], row[24]), // Y,Z,AA
+          handle: parseBB(row[25], row[26], row[27])  // AB,AC,AD
         },
-        notes: String(row[23] || '').trim() // Y列
+
+        notes: String(row[28] || '').trim() // AE列
       });
     });
   }
