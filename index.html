@@ -1334,46 +1334,79 @@ function parseBB(outerVal, innerVal, widthVal) {
     /**
      * 10. GAS Web App JSON API 同期
      */
-    async function syncFromGasApi(urlOverride = null) {
-      const inputEl = document.getElementById('gas-url-input');
-      const rawUrl = (urlOverride || inputEl.value || '').trim();
-      if (!rawUrl) {
-        showToast('GAS ウェブアプリURLを入力してください', 'error');
-        return;
-      }
-      if (!rawUrl.startsWith('https://script.google.com/')) {
-        showToast('有効な Google Apps Script URL (https://script.google.com/...) を入力してください', 'error');
-        return;
-      }
 
-      localStorage.setItem(GAS_URL_KEY, rawUrl);
+/**
+ * GAS Web App JSON API 同期
+ */
+	async function syncFromGasApi(urlOverride = null, silent = false) {
+	  const inputEl = document.getElementById('gas-url-input');
+	  const rawUrl = (
+	    urlOverride ||
+	    DEFAULT_GAS_API_URL ||
+	    inputEl.value ||
+	    ''
+	  ).trim();
+	
+	  if (!rawUrl || !rawUrl.startsWith('https://script.google.com/')) {
+	    if (!silent) {
+	      showToast('有効なGAS URLを確認してください', 'error');
+	    }
+	    return;
+	  }
+	
+	  const headerIcon = document.getElementById('header-sync-icon');
+	  const btnSpinner = document.getElementById('gas-btn-spinner');
+	
+	  if (headerIcon) headerIcon.classList.add('animate-spin');
+	  if (btnSpinner) btnSpinner.classList.add('animate-spin');
+	
+	  try {
+	    const res = await fetch(rawUrl, {
+	      method: 'GET',
+	      redirect: 'follow',
+	      cache: 'no-store'
+	    });
+	
+	    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	
+	    const data = await res.json();
+	
+	    if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
+	      throw new Error('有効なreels配列がありません');
+	    }
+	
+	    // 正常取得できた場合のみデータを更新
+	    reelsDB = data.reels;
+	
+	    localStorage.setItem(GAS_URL_KEY, rawUrl);
+	    if (inputEl) inputEl.value = rawUrl;
+	
+	    saveDatabase('GAS 自動同期');
+	    refreshAllViews();
+	
+	    if (!silent) {
+	      showToast(
+	        `スプレッドシートと同期完了（全 ${reelsDB.length} 機種）`,
+	        'success'
+	      );
+	    }
+	
+	  } catch (err) {
+	    console.error('GAS同期エラー:', err);
+	
+	    if (!silent) {
+	      showToast(
+	        '同期失敗：保存済みデータで表示を継続します',
+	        'error'
+	      );
+	    }
+	
+	  } finally {
+	    if (headerIcon) headerIcon.classList.remove('animate-spin');
+	    if (btnSpinner) btnSpinner.classList.remove('animate-spin');
+	  }
+	}
 
-      const headerIcon = document.getElementById('header-sync-icon');
-      const btnSpinner = document.getElementById('gas-btn-spinner');
-      headerIcon.classList.add('animate-spin');
-      if (btnSpinner) btnSpinner.classList.add('animate-spin');
-
-      try {
-        const res = await fetch(rawUrl, { method: 'GET', redirect: 'follow' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
-          throw new Error('JSON内に有効な reels 配列が含まれていません');
-        }
-
-        reelsDB = data.reels;
-        saveDatabase('GAS 非公開シート同期');
-        refreshAllViews();
-        showToast(`スプレッドシートと同期完了（全 ${reelsDB.length} 機種）`, 'success');
-      } catch (err) {
-        console.error(err);
-        showToast('同期失敗: GASのデプロイ設定（アクセスできるユーザー: 全員）とURLを確認してください', 'error');
-      } finally {
-        headerIcon.classList.remove('animate-spin');
-        if (btnSpinner) btnSpinner.classList.remove('animate-spin');
-      }
-    }
 
     /**
      * 11. ベイトリール検索 & 詳細描画
