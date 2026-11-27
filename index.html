@@ -2124,7 +2124,7 @@ function renderSpinningDetail(reel) {
   };
 
   // 糸巻き量の後に表示する備考NOTE（L列 = reel.note、既存 AE列 = reel.notes もフォールバック/併記対応）
-  const spinNoteText = reel.note || reel.notes || '';
+  const spinNoteText = reel.note ||  '';
   const spinNoteHtml = spinNoteText
     ? `
       <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
