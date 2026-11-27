@@ -430,15 +430,42 @@
           </div>
 
           <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
-            <a href="forms.gle/3mxGXzVExjvmWM3PA" target="_blank" rel="noopener noreferrer" id="main-google-form-btn" class="px-5 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-              Googleフォームでデータを投稿する
-            </a>
-            <button type="button" id="edit-form-url-toggle" class="text-[11px] text-slate-400 hover:text-slate-200 underline text-center">
-              フォームURLをカスタマイズする
-            </button>
-          </div>
-        </div>
+            
+<div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+
+  <!-- ベイトリール用 -->
+  <a href="https://forms.gle/3mxGXzVExjvmWM3PA"
+     target="_blank"
+     rel="noopener noreferrer"
+     id="bait-google-form-btn"
+     class="px-5 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+    </svg>
+    ベイトリールのデータを投稿する
+  </a>
+
+  <!-- スピニングリール用 -->
+  <a href="https://forms.gle/n1PSKUXYP8RxdFa77"
+     target="_blank"
+     rel="noopener noreferrer"
+     id="spinning-google-form-btn"
+     class="px-5 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 text-sm font-bold shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+    </svg>
+    スピニングリールのデータを投稿する
+  </a>
+
+  <button type="button" id="edit-form-url-toggle"
+    class="text-[11px] text-slate-400 hover:text-slate-200 underline text-center">
+    投稿フォームURLをカスタマイズする
+  </button>
+
+</div>
+
 
         <!-- フォームURL変更パネル（折りたたみ） -->
         <div id="form-url-editor" class="hidden mt-4 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row gap-2">
