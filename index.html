@@ -1534,9 +1534,24 @@ function parseBB(outerVal, innerVal, widthVal) {
 		    </button>`;
 		  }).join('');
 
-		  // 未選択なら詳細を表示しない
-		  const currentReel = filtered.find(r => r.id === selectedBaitId) || null;
-		  renderBaitDetail(currentReel);
+
+		// 未選択なら詳細を表示しない
+		const currentReel = filtered.find(r => r.id === selectedBaitId) || null;
+		renderBaitDetail(currentReel);
+		
+		// 候補機種のクリックイベント
+		pillsContainer.querySelectorAll('[data-select-bait]').forEach(btn => {
+		  btn.addEventListener('click', () => {
+		    selectedBaitId = btn.getAttribute('data-select-bait');
+		
+		    // MODEL選択欄にも反映
+		    modelSelect.value = selectedBaitId;
+		
+		    // 選択状態と詳細情報を更新
+		    updateBaitModelDropdown();
+		  });
+		});
+
 		}
 
 
