@@ -1907,7 +1907,22 @@ function updateSpinningModelDropdown() {
   // 未選択なら詳細を表示しない
   const currentReel = filtered.find(r => r.id === selectedSpinId) || null;
   
+  // 詳細表示
+  renderSpinningDetail(currentReel);
 
+  // 候補機種のクリックイベント
+  pillsContainer.querySelectorAll('[data-select-spin]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedSpinId = btn.getAttribute('data-select-spin');
+
+      // MODEL選択欄にも反映
+      modelSelect.value = selectedSpinId;
+
+      // 選択状態と詳細情報を更新
+      updateSpinningModelDropdown();
+    });
+  });
+}
 
 function renderSpinningDetail(reel) {
   const container = document.getElementById('spin-detail-container');
