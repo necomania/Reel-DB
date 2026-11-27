@@ -2481,18 +2481,54 @@ function renderSpinningDetail(reel) {
         syncFromGasApi();
       });
 
-      // GoogleフォームURLカスタマイズ
-      document.getElementById('edit-form-url-toggle').addEventListener('click', () => {
-        document.getElementById('form-url-editor').classList.toggle('hidden');
-      });
-      document.getElementById('save-form-url-btn').addEventListener('click', () => {
-        const val = document.getElementById('custom-form-url-input').value.trim();
-        if (!val) return;
-        localStorage.setItem(FORM_URL_KEY, val);
-        document.getElementById('header-form-link').href = val;
-        document.getElementById('main-google-form-btn').href = val;
-        showToast('投稿用GoogleフォームURLを保存しました', 'success');
-      });
+
+// GoogleフォームURLカスタマイズ
+document.getElementById('edit-form-url-toggle').addEventListener('click', () => {
+  document.getElementById('form-url-editor').classList.toggle('hidden');
+});
+
+document.getElementById('save-form-url-btn').addEventListener('click', () => {
+
+  const baitUrl = document.getElementById('custom-bait-form-url-input').value.trim();
+  const spinningUrl = document.getElementById('custom-spinning-form-url-input').value.trim();
+
+  // 両方のURLを確認
+  if (!baitUrl || !spinningUrl) {
+    showToast('両方のフォームURLを入力してください', 'error');
+    return;
+  }
+
+  // URL形式を確認
+  try {
+    const baitParsed = new URL(baitUrl);
+    const spinningParsed = new URL(spinningUrl);
+
+    if (baitParsed.protocol !== 'https:' || spinningParsed.protocol !== 'https:') {
+      showToast('https:// から始まるURLを入力してください', 'error');
+      return;
+    }
+  } catch (e) {
+    showToast('正しいフォームURLを入力してください', 'error');
+    return;
+  }
+
+  // 個別に保存
+  localStorage.setItem(BAIT_FORM_URL_KEY, baitUrl);
+  localStorage.setItem(SPINNING_FORM_URL_KEY, spinningUrl);
+
+  // 旧設定との互換性を維持（ベイト用）
+  localStorage.setItem(LEGACY_FORM_URL_KEY, baitUrl);
+
+  // 投稿ボタンへ反映
+  document.getElementById('bait-google-form-btn').href = baitUrl;
+  document.getElementById('spinning-google-form-btn').href = spinningUrl;
+
+  // ヘッダーの投稿リンクはベイト用
+  document.getElementById('header-form-link').href = baitUrl;
+
+  showToast('ベイト・スピニングの投稿フォームURLを保存しました', 'success');
+});
+
 
       // ファイルドラッグ＆ドロップインポート (.xlsx / .csv)
       const dropZone = document.getElementById('file-drop-zone');
