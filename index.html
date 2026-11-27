@@ -302,7 +302,12 @@
             <label for="spin-model-select" class="block text-xs font-medium text-slate-400 mb-1.5">Model (機種名)</label>
             <select id="spin-model-select" class="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-emerald-300 focus:outline-none focus:border-emerald-400"></select>
           </div>
-        </div>
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar mt-3">
+  <span class="text-[11px] font-mono text-slate-500 shrink-0">
+    候補機種 (<span id="spin-match-count">0</span>):
+  </span>
+  <div id="spin-quick-pills" class="flex items-center gap-1.5"></div>
+</div></div>
       </div>
       <div id="spin-detail-container" class="space-y-6"></div>
     </section>
