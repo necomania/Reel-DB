@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中華リールスペック＆ベアリング適合DB | CDM Reel Spec Database</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS CDN (.xlsx / .csv 読み込み用) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            slate: {
+              850: '#151e2e',
+              925: '#0c121e',
+              950: '#080c14',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- 通知トースト (alert代替) -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+  <!-- 確認モーダル (confirm代替) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center gap-3 text-amber-400 mb-3">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <h3 id="confirm-title" class="text-lg font-bold text-white">確認</h3>
+      </div>
+      <p id="confirm-message" class="text-sm text-slate-300 leading-relaxed mb-6">この操作を実行してもよろしいですか？</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors">キャンセル</button>
+        <button id="confirm-ok-btn" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold shadow-lg transition-colors">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GASコード表示モーダル -->
+  <div id="gas-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Code.gs</span>
+          <h3 class="text-sm sm:text-base font-bold text-white">非公開スプレッドシート連携用 Google Apps Script</h3>
+        </div>
+        <button id="close-gas-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300">
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-1.5 text-xs">
+          <p class="font-semibold text-cyan-400">セットアップ手順（1分で完了・シートは非公開のままでOK）</p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-300">
+            <li>スプレッドシートのメニューから <strong>「拡張機能」＞「Apps Script」</strong> を開きます。</li>
+            <li>エディタ内の既存コードをすべて消し、下の <code class="text-cyan-300">Code.gs</code> を貼り付けて保存します。</li>
+            <li>右上の <strong>「デプロイ」＞「新しいデプロイ」</strong> をクリックし、種類で <strong>「ウェブアプリ」</strong> を選択します。</li>
+            <li>「次のユーザーとして実行：<strong>自分</strong>」「アクセスできるユーザー：<strong>全員</strong>」にしてデプロイします（※スプレッドシート自体は非公開のままでDATAシートのみ読み取り専用JSONとして配信されます）。</li>
+            <li>発行された <strong>ウェブアプリURL（.../exec）</strong> をこの画面の入力欄に貼り付けて保存してください。</li>
+          </ol>
+        </div>
+
+        <div class="relative">
+          <button id="copy-gas-code-btn" class="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold shadow-lg flex items-center gap-1.5 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            コードをコピー
+          </button>
+          <pre id="gas-code-block" class="bg-slate-950 border border-slate-800 rounded-xl p-4 pt-12 font-mono text-[11px] sm:text-xs text-emerald-300 overflow-x-auto leading-relaxed select-all"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ヘッダー -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3.5 gap-3">
+        <!-- ロゴ & タイトル -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+              <svg class="w-6 h-6 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="9"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="12" cy="5.5" r="1" fill="currentColor"/>
+                <circle cx="12" cy="18.5" r="1" fill="currentColor"/>
+                <circle cx="5.5" cy="12" r="1" fill="currentColor"/>
+                <circle cx="18.5" cy="12" r="1" fill="currentColor"/>
+                <circle cx="7.4" cy="7.4" r="1" fill="currentColor"/>
+                <circle cx="16.6" cy="16.6" r="1" fill="currentColor"/>
+                <circle cx="16.6" cy="7.4" r="1" fill="currentColor"/>
+                <circle cx="7.4" cy="16.6" r="1" fill="currentColor"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">中華リールスペック表 <span class="text-xs font-mono font-normal px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">Private-Sync</span></h1>
+              </div>
+              <p class="text-xs text-slate-400 hidden sm:block">CDM Baitcasting / Spinning Spec & Miniature Bearing Cross-Reference</p>
+            </div>
+          </div>
+          <div class="flex sm:hidden items-center gap-1.5 text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/70">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="mobile-db-count">0</span> 件
+          </div>
+        </div>
+
+        <!-- ステータス & クイック同期バー -->
+        <div class="flex items-center justify-between sm:justify-end gap-2.5 text-xs">
+          <div class="hidden md:flex items-center gap-2 bg-slate-850 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="sync-source-label" class="text-slate-400">内蔵プリセット</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-400">収録:</span>
+            <span id="header-reel-count" class="font-mono font-semibold text-white">0</span>
+          </div>
+
+          <!-- ヘッダークイック同期ボタン -->
+          <button id="header-quick-sync-btn" class="px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-semibold flex items-center gap-1.5 transition-all" title="スプレッドシート連携タブへ移動または最新データを取得">
+            <svg id="header-sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span id="header-sync-text">シート同期</span>
+          </button>
+
+          <!-- ユーザー投稿Googleフォーム直通リンク -->
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLScum2-1nP5i3C7v9m8k2x4z6w8y0q1a3s5d7f9g1h3j5k7l9/viewform" target="_blank" rel="noopener noreferrer" id="header-form-link" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-semibold flex items-center gap-1.5 transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span class="hidden sm:inline">スペック投稿</span>
+            <span class="sm:hidden">投稿</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ナビゲーションタブ -->
+      <nav class="flex overflow-x-auto no-scrollbar -mb-px gap-1 sm:gap-2 pb-1 sm:pb-0" aria-label="Tabs">
+        <button data-tab="bait" class="tab-btn active group flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-cyan-400 text-cyan-400 bg-slate-800/40 whitespace-nowrap transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          ベイトリール検索
+        </button>
+        <button data-tab="spinning" class="tab-btn group flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 whitespace-nowrap transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          スピニング検索
+        </button>
+        <button data-tab="bearing" class="tab-btn group flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 whitespace-nowrap transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          ベアリング品番逆引き
+        </button>
+        <button data-tab="submit" class="tab-btn group flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 whitespace-nowrap transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          データ投稿
+        </button>
+        <button data-tab="sync" class="tab-btn group flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 whitespace-nowrap transition-all">
+          <svg id="sync-tab-lock-icon" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          スプレッドシート連携
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ領域 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: ベイトリール検索・スペックビューア                           -->
+    <!-- =================================================================== -->
+    <section id="tab-bait" class="tab-panel space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-800/80">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-5 bg-cyan-400 rounded-full inline-block"></span>
+              ベイトリール 機種選択＆絞り込み
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">ブランド・モデル選択、またはスプール径・キーワードで該当機種のベアリング寸法と適合型番を照会</p>
+          </div>
+          <button id="bait-reset-filter" class="self-start md:self-auto text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-850 border border-slate-800 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            フィルタ解除
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5">
+          <div class="lg:col-span-3">
+            <label for="bait-brand-select" class="block text-xs font-medium text-slate-400 mb-1.5">Brand (メーカー)</label>
+            <select id="bait-brand-select" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors">
+              <option value="ALL">すべてのブランド</option>
+            </select>
+          </div>
+          <div class="lg:col-span-4">
+            <label for="bait-model-select" class="block text-xs font-medium text-slate-400 mb-1.5">Model (機種名・ギア比)</label>
+            <select id="bait-model-select" class="w-full bg-slate-950 border border-cyan-500/40 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-cyan-300 focus:outline-none focus:border-cyan-400 transition-colors"></select>
+          </div>
+          <div class="lg:col-span-3">
+            <label for="bait-keyword" class="block text-xs font-medium text-slate-400 mb-1.5">キーワード検索</label>
+            <div class="relative">
+              <input id="bait-keyword" type="text" placeholder="例: Aurora, 28mm, DC..." class="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors">
+              <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+          </div>
+          <div class="lg:col-span-2">
+            <label for="bait-spool-filter" class="block text-xs font-medium text-slate-400 mb-1.5">スプール径</label>
+            <select id="bait-spool-filter" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors">
+              <option value="ALL">全サイズ</option>
+              <option value="28">28mm (BFS)</option>
+              <option value="30">30mm</option>
+              <option value="32">32mm</option>
+              <option value="34+">34mm以上</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- クイックチップ＆候補リスト -->
+        <div class="mt-4 pt-3.5 border-t border-slate-800/70 flex flex-col gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[11px] font-mono text-slate-500 mr-1">FILTER:</span>
+              <button type="button" data-spool-chip="ALL" class="spool-chip px-2.5 py-1 rounded-lg text-xs font-mono border transition-all bg-cyan-500/20 border-cyan-400 text-cyan-300">All</button>
+              <button type="button" data-spool-chip="28" class="spool-chip px-2.5 py-1 rounded-lg text-xs font-mono border transition-all bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200">28mm</button>
+              <button type="button" data-spool-chip="30" class="spool-chip px-2.5 py-1 rounded-lg text-xs font-mono border transition-all bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200">30mm</button>
+              <button type="button" data-spool-chip="32" class="spool-chip px-2.5 py-1 rounded-lg text-xs font-mono border transition-all bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200">32mm</button>
+              <button type="button" data-spool-chip="34+" class="spool-chip px-2.5 py-1 rounded-lg text-xs font-mono border transition-all bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200">34mm+</button>
+              <button type="button" id="bait-bb-only-btn" class="px-2.5 py-1 rounded-lg text-xs font-medium border transition-all bg-slate-950 border-slate-800 text-slate-400 hover:text-emerald-300 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                BB寸法記録ありのみ
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="toggle-compare-panel-btn" class="px-3 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 transition-all">
+                比較モード (<span id="compare-count-badge">0</span>/3)
+              </button>
+              <button type="button" id="clear-compare-btn" class="hidden px-2 py-1 rounded-lg text-[11px] text-slate-400 hover:text-rose-300 bg-slate-950 border border-slate-800">クリア</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span class="text-[11px] font-mono text-slate-500 shrink-0">CANDIDATES (<span id="bait-match-count">0</span>):</span>
+            <div id="bait-quick-pills" class="flex items-center gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 機種比較ビューア -->
+      <div id="compare-section" class="hidden bg-slate-900/95 border border-amber-500/30 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span class="w-2 h-5 bg-amber-400 rounded-full inline-block"></span>
+            リールスペック＆ベアリング 並べて比較 (最大3機種)
+          </h3>
+          <button type="button" id="close-compare-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium">閉じる</button>
+        </div>
+        <div id="compare-grid-container" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- 選択中ベイトリール詳細ビュー -->
+      <div id="bait-detail-container" class="space-y-6"></div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: スピニングリール検索・スペックビューア                         -->
+    <!-- =================================================================== -->
+    <section id="tab-spinning" class="tab-panel hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="pb-4 mb-4 border-b border-slate-800/80">
+          <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+            <span class="w-2 h-5 bg-emerald-400 rounded-full inline-block"></span>
+            スピニングリール 機種選択＆スペック照会
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">スプール受け(010)・ラインローラー(035)・ピニオン(053)・ドライブギア(073/080)・ハンドルの適合型番を表示</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label for="spin-brand-select" class="block text-xs font-medium text-slate-400 mb-1.5">Brand (メーカー)</label>
+            <select id="spin-brand-select" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+              <option value="ALL">すべてのブランド</option>
+            </select>
+          </div>
+          <div class="sm:col-span-1 lg:col-span-2">
+            <label for="spin-model-select" class="block text-xs font-medium text-slate-400 mb-1.5">Model (機種名・番手)</label>
+            <select id="spin-model-select" class="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-emerald-300 focus:outline-none focus:border-emerald-400"></select>
+          </div>
+        </div>
+      </div>
+      <div id="spin-detail-container" class="space-y-6"></div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: ベアリング品番逆引き検索                                       -->
+    <!-- =================================================================== -->
+    <section id="tab-bearing" class="tab-panel hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-800">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-5 bg-cyan-400 rounded-full inline-block"></span>
+              ミニチュアベアリング 寸法逆引き検索
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">ノギスで測定した「内径 × 外径 × 幅 (mm)」からJIS呼び番号およびNSK / Minebea / NTN型番を特定</p>
+          </div>
+          <button id="bb-reset-btn" class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-medium transition-colors">条件をリセット</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+          <div>
+            <label for="bb-inner-select" class="block text-xs font-semibold text-cyan-400 mb-1.5">内径 Inner Dia (d) [mm]</label>
+            <select id="bb-inner-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 font-mono text-sm text-white focus:outline-none focus:border-cyan-400">
+              <option value="">指定なし (すべて)</option>
+            </select>
+          </div>
+          <div>
+            <label for="bb-outer-select" class="block text-xs font-semibold text-emerald-400 mb-1.5">外径 Outer Dia (D) [mm]</label>
+            <select id="bb-outer-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 font-mono text-sm text-white focus:outline-none focus:border-emerald-400">
+              <option value="">指定なし (すべて)</option>
+            </select>
+          </div>
+          <div>
+            <label for="bb-width-select" class="block text-xs font-semibold text-amber-400 mb-1.5">幅 Width (B) [mm]</label>
+            <select id="bb-width-select" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 font-mono text-sm text-white focus:outline-none focus:border-amber-400">
+              <option value="">指定なし (すべて)</option>
+            </select>
+          </div>
+          <div>
+            <label for="bb-code-search" class="block text-xs font-medium text-slate-400 mb-1.5">型番・呼び番号で検索</label>
+            <input id="bb-code-search" type="text" placeholder="例: 685, DDL-1150, 1030..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 font-mono text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-800/70">
+          <span class="text-xs text-slate-400 block mb-2">よく使われるリール用サイズ (ワンタップ検索):</span>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="3" data-D="10" data-B="4">3×10×4 <span class="text-slate-400">(スプール定番)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="5" data-D="11" data-B="4">5×11×4 <span class="text-slate-400">(スプール/ピニオン)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="5" data-D="10" data-B="4">5×10×4 <span class="text-slate-400">(ベイトスプール)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="3" data-D="8" data-B="4">3×8×4 <span class="text-slate-400">(BFSスプール)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="4" data-D="7" data-B="2.5">4×7×2.5 <span class="text-slate-400">(ハンドルノブ/ウォーム)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="5" data-D="8" data-B="2.5">5×8×2.5 <span class="text-slate-400">(ウォームシャフト)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="4" data-D="8" data-B="3">4×8×3 <span class="text-slate-400">(ウォーム/ラインローラー)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="8" data-D="12" data-B="3.5">8×12×3.5 <span class="text-slate-400">(ピニオン内側/X-SHIP)</span></button>
+            <button type="button" class="bb-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-xs font-mono text-slate-200 transition-colors" data-d="7" data-D="11" data-B="3">7×11×3 <span class="text-slate-400">(ラインローラー等)</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs sm:text-sm font-semibold text-slate-200">適合ベアリング規格一覧</span>
+          <span class="text-xs font-mono text-cyan-400">該当: <strong id="bb-result-count">0</strong> 件</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                <th class="py-3 px-4">寸法 (内×外×幅)</th>
+                <th class="py-3 px-4">JIS呼び番号</th>
+                <th class="py-3 px-4">NSK (開放 / ZZ)</th>
+                <th class="py-3 px-4">Minebea NMB (開放 / ZZ)</th>
+                <th class="py-3 px-4">NTN (開放 / ZZ)</th>
+                <th class="py-3 px-4">主な使用箇所・備考</th>
+              </tr>
+            </thead>
+            <tbody id="bb-table-body" class="divide-y divide-slate-800/70 text-xs sm:text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: データ投稿 (独立タブ)                                        -->
+    <!-- =================================================================== -->
+    <section id="tab-submit" class="tab-panel hidden space-y-6">
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div class="space-y-2.5 max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              データ投稿窓口（Googleフォーム受付）
+            </div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">新規リールスペック・ベアリング実測データの投稿</h2>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              お手持ちのリールのスプール径・スプール重量・ギア比や、分解・ノギス実測によるベアリング寸法（外径×内径×幅）をGoogleフォームからお送りいただけます。送信内容は管理者が確認・整形したうえでデータベースへ反映されます。
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScum2-1nP5i3C7v9m8k2x4z6w8y0q1a3s5d7f9g1h3j5k7l9/viewform" target="_blank" rel="noopener noreferrer" id="main-google-form-btn" class="px-5 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Googleフォームでデータを投稿する
+            </a>
+            <button type="button" id="edit-form-url-toggle" class="text-[11px] text-slate-400 hover:text-slate-200 underline text-center">
+              フォームURLをカスタマイズする
+            </button>
+          </div>
+        </div>
+
+        <!-- フォームURL変更パネル（折りたたみ） -->
+        <div id="form-url-editor" class="hidden mt-4 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row gap-2">
+          <input id="custom-form-url-input" type="url" placeholder="https://docs.google.com/forms/d/e/1FAIpQLScum2.../viewform" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-400">
+          <button id="save-form-url-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">URLを保存</button>
+        </div>
+      </div>
+
+      <!-- 投稿時の測定・記入ガイド -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1.5">
+          <div class="font-bold text-cyan-400">1. 基本スペック</div>
+          <p class="text-slate-400 leading-relaxed">Brand（メーカー）、Model（機種名・左右や番手）、ギア比、1回転巻上長（cm）をご記入ください。</p>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1.5">
+          <div class="font-bold text-emerald-400">2. スプール寸法・重量</div>
+          <p class="text-slate-400 leading-relaxed">スプール外径・幅（mm）と、0.01g単位スケールでの実測スプール重量（g）があると比較精度が高まります。</p>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1.5">
+          <div class="font-bold text-amber-400">3. ベアリング寸法</div>
+          <p class="text-slate-400 leading-relaxed">「外径 × 内径 × 幅 (mm)」の順でご記入ください。不明な部位は空欄のままで問題ありません。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: スプレッドシート連携 (パスコード tom5615001 ロック保護)     -->
+    <!-- =================================================================== -->
+    <section id="tab-sync" class="tab-panel hidden space-y-6">
+
+      <!-- パスコードロック画面 -->
+      <div id="sync-lock-screen" class="bg-slate-900/95 border border-slate-800 rounded-2xl p-6 sm:p-10 shadow-2xl max-w-lg mx-auto my-6 space-y-6">
+        <div class="text-center space-y-2.5">
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-amber-400 mx-auto flex items-center justify-center shadow-lg shadow-amber-500/10">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-white">スプレッドシート連携（ロック中）</h2>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            GAS同期・ファイル取込・バックアップ出力などの連携操作を行うには、管理者パスコードを入力してロックを解除してください。
+          </p>
+        </div>
+
+        <form id="sync-unlock-form" class="space-y-4">
+          <div>
+            <label for="sync-passcode-input" class="block text-xs font-semibold text-slate-300 mb-1.5">パスコード</label>
+            <input id="sync-passcode-input" type="password" autocomplete="current-password" placeholder="パスコードを入力" class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 font-mono text-sm text-white placeholder-slate-600 focus:outline-none transition-colors">
+            <p id="sync-passcode-error" class="hidden text-xs text-rose-400 mt-1.5">パスコードが正しくありません。</p>
+          </div>
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 text-sm font-bold shadow-lg shadow-cyan-500/20 transition-all">
+            ロックを解除する
+          </button>
+        </form>
+      </div>
+
+      <!-- ロック解除後に表示される連携管理パネル -->
+      <div id="sync-unlocked-content" class="hidden space-y-6">
+
+        <!-- ロック状態ヘッダーバー -->
+        <div class="bg-slate-900/90 border border-cyan-500/30 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 text-xs sm:text-sm">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span class="font-bold text-white">スプレッドシート連携パネル</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono text-[11px]">UNLOCKED</span>
+          </div>
+          <button type="button" id="sync-lock-btn" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center gap-1.5 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            再びロックする
+          </button>
+        </div>
+
+        <!-- 非公開スプレッドシートとの2つの同期方式 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- Option A: GAS Webアプリ JSON API 同期 -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-5">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold">OPTION A : GAS API SYNC</span>
+                <span class="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  シート非公開のまま自動同期
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white">Google Apps Script (GAS) ウェブアプリ連携</h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                スプレッドシートの共有設定を<strong>「制限付き（非公開）」</strong>のまま維持しつつ、<code class="text-slate-200">DATA(ベイト)</code>（B〜AH列・5行目以降）と <code class="text-slate-200">DATA(スピニング)</code>（B〜Y列・5行目以降）の整形済みデータだけをJSONとして取得します。
+              </p>
+
+              <div class="pt-2 space-y-2">
+                <label for="gas-url-input" class="block text-xs font-semibold text-slate-300">GAS ウェブアプリURL (<code class="text-cyan-400">https://script.google.com/macros/s/.../exec</code>)</label>
+                <input id="gas-url-input" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 font-mono text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400">
+              </div>
+
+              <div id="gas-last-sync-info" class="text-[11px] font-mono text-slate-400 bg-slate-950/70 border border-slate-800/80 rounded-xl px-3 py-2">
+                同期ステータス: 未同期（URL未設定）
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center gap-2.5">
+              <button id="sync-gas-btn" class="flex-1 min-w-[160px] px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all">
+                <svg id="gas-btn-spinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                最新データを同期
+              </button>
+              <button id="open-gas-modal-btn" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                Code.gs を表示
+              </button>
+            </div>
+          </div>
+
+          <!-- Option B: ゼロ設定 .xlsx / .csv ファイル直接インポート -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-5">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold">OPTION B : ZERO-SETUP FILE IMPORT</span>
+                <span class="text-[11px] text-slate-400">完全ローカル処理</span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white">.xlsx / .csv ファイル直接インポート</h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                GAS設定不要。非公開スプレッドシートからダウンロードした <strong>Excel形式（.xlsx）</strong> または <strong>CSV形式（.csv）</strong> をドロップすると、<code class="text-slate-200">DATA(ベイト)</code>・<code class="text-slate-200">DATA(スピニング)</code> シートを自動解析して即座にデータベースを更新します。
+              </p>
+
+              <!-- ドラッグ＆ドロップエリア -->
+              <div id="file-drop-zone" class="mt-2 border-2 border-dashed border-slate-700 hover:border-amber-400/70 bg-slate-950/60 hover:bg-slate-950 rounded-2xl p-6 text-center cursor-pointer transition-all group">
+                <input id="spreadsheet-file-input" type="file" accept=".xlsx,.xls,.csv" class="hidden">
+                <div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 group-hover:border-amber-500/40 mx-auto flex items-center justify-center text-amber-400 mb-2.5 transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <p class="text-xs sm:text-sm font-semibold text-slate-200">ここに <span class="text-amber-300">.xlsx</span> または <span class="text-amber-300">.csv</span> をドラッグ＆ドロップ</p>
+                <p class="text-[11px] text-slate-500 mt-1">またはクリックしてファイルを選択（サーバー送信なし・ブラウザ内で完結）</p>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button id="export-csv-btn" class="px-3 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                  CSV出力
+                </button>
+                <button id="export-json-btn" class="px-3 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                  JSON出力
+                </button>
+              </div>
+              <button id="reset-db-btn" class="px-3 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-300 text-xs font-semibold transition-colors">
+                初期プリセットに戻す
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- スプレッドシート列マッピング仕様リファレンス -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+          <h4 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3">スプレッドシート列構造マッピング仕様（自動パース対象）</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+              <div class="font-bold text-cyan-400 flex items-center justify-between">
+                <span>シート名: DATA(ベイト)</span>
+                <span class="font-mono text-[11px] text-slate-500">B〜AH列 / 5行目以降</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                <span class="text-slate-200 font-mono">B:</span> Brand / <span class="text-slate-200 font-mono">C:</span> Model / <span class="text-slate-200 font-mono">D:</span> ギア比 / <span class="text-slate-200 font-mono">E:</span> 巻上長 / <span class="text-slate-200 font-mono">F-G:</span> スプール径・幅 / <span class="text-slate-200 font-mono">H-I:</span> スプール重量(Main/Sub) / <span class="text-slate-200 font-mono">J-AG:</span> 8部位ベアリング(外×内×幅) / <span class="text-slate-200 font-mono">AH:</span> 備考
+              </p>
+            </div>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+              <div class="font-bold text-emerald-400 flex items-center justify-between">
+                <span>シート名: DATA(スピニング)</span>
+                <span class="font-mono text-[11px] text-slate-500">B〜Y列 / 5行目以降</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                <span class="text-slate-200 font-mono">B:</span> Brand / <span class="text-slate-200 font-mono">C:</span> Model / <span class="text-slate-200 font-mono">D:</span> ギア比 / <span class="text-slate-200 font-mono">E:</span> 巻上長 / <span class="text-slate-200 font-mono">F:</span> スプール径 / <span class="text-slate-200 font-mono">G-X:</span> 6部位ベアリング(010 Spool, 035 Roller, 053 Pinion, 073 Drive A, 080 Drive B, Handle) / <span class="text-slate-200 font-mono">Y:</span> 備考
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- フッター -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-5 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p>中華リールスペック表 (仮) Web Database &mdash; Private Google Sheets Sync & Bearing Cross-Reference</p>
+      <p class="font-mono">LocalStorage Cached &bull; Zero Public Sheet Exposure</p>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- アプリケーションロジック & 初期プリセットデータベース                     -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * スプレッドシート連携タブ用パスコード
+     */
+    const SYNC_PASSCODE = 'tom5615001';
+
+    /**
+     * 1. GAS Code.gs テンプレート (DATA(ベイト) B..AH列・5行目以降 / DATA(スピニング) B..Y列・5行目以降)
+     */
+    const GAS_TEMPLATE_CODE = `/**
+ * 中華リールスペック表(仮) 非公開スプレッドシート連携API (Code.gs)
+ * スプレッドシートは「制限付き(非公開)」のまま、DATA(ベイト) と DATA(スピニング) のみをJSONで配信します。
+ */
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const baitSheet = ss.getSheetByName('DATA(ベイト)');
+  const spinSheet = ss.getSheetByName('DATA(スピニング)');
+
+  const reels = [];
+
+  // 1. DATA(ベイト): B列(2)〜AH列(34), 5行目以降
+  if (baitSheet && baitSheet.getLastRow() >= 5) {
+    const numRows = baitSheet.getLastRow() - 4;
+    const values = baitSheet.getRange(5, 2, numRows, 33).getValues(); // B=2 .. AH=34 (33列)
+    values.forEach((row, idx) => {
+      const brand = String(row[0] || '').trim();
+      const model = String(row[1] || '').trim();
+      if (!brand && !model) return;
+
+      reels.push({
+        id: 'bait-' + (idx + 5) + '-' + (brand + '-' + model).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        type: 'bait',
+        brand: brand || '不明',
+        model: model || '名称未設定',
+        gearRatio: parseNum(row[2]),
+        windingLength: parseNum(row[3]),
+        spoolDia: parseNum(row[4]),
+        spoolWidth: parseNum(row[5]),
+        spoolWeightMain: parseNum(row[6]),
+        spoolWeightSub: parseNum(row[7]),
+        bearings: {
+          spool:       parseBB(row[8],  row[9],  row[10]), // J,K,L
+          sideCover:   parseBB(row[11], row[12], row[13]), // M,N,O
+          pinionOuter: parseBB(row[14], row[15], row[16]), // P,Q,R
+          clutchCam:   parseBB(row[17], row[18], row[19]), // S,T,U
+          handle:      parseBB(row[20], row[21], row[22]), // V,W,X
+          gearShaft:   parseBB(row[23], row[24], row[25]), // Y,Z,AA
+          wormGear:    parseBB(row[26], row[27], row[28]), // AB,AC,AD
+          wormCover:   parseBB(row[29], row[30], row[31])  // AE,AF,AG
+        },
+        notes: String(row[32] || '').trim() // AH列
+      });
+    });
+  }
+
+  // 2. DATA(スピニング): B列(2)〜Y列(25), 5行目以降
+  if (spinSheet && spinSheet.getLastRow() >= 5) {
+    const numRows = spinSheet.getLastRow() - 4;
+    const values = spinSheet.getRange(5, 2, numRows, 24).getValues(); // B=2 .. Y=25 (24列)
+    values.forEach((row, idx) => {
+      const brand = String(row[0] || '').trim();
+      const model = String(row[1] || '').trim();
+      if (!brand && !model) return;
+
+      reels.push({
+        id: 'spin-' + (idx + 5) + '-' + (brand + '-' + model).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        type: 'spinning',
+        brand: brand || '不明',
+        model: model || '名称未設定',
+        gearRatio: parseNum(row[2]),
+        windingLength: parseNum(row[3]),
+        spoolDia: parseNum(row[4]),
+        spoolWidth: null,
+        spoolWeightMain: null,
+        spoolWeightSub: null,
+        bearings: {
+          spool:  parseBB(row[5],  row[6],  row[7]),  // G,H,I
+          roller: parseBB(row[8],  row[9],  row[10]), // J,K,L
+          pinion: parseBB(row[11], row[12], row[13]), // M,N,O
+          driveA: parseBB(row[14], row[15], row[16]), // P,Q,R
+          driveB: parseBB(row[17], row[18], row[19]), // S,T,U
+          handle: parseBB(row[20], row[21], row[22])  // V,W,X
+        },
+        notes: String(row[23] || '').trim() // Y列
+      });
+    });
+  }
+
+  const payload = {
+    status: 'ok',
+    updatedAt: new Date().toISOString(),
+    count: reels.length,
+    reels: reels
+  };
+
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function parseNum(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function parseBB(outerVal, innerVal, widthVal) {
+  const outer = parseNum(outerVal);
+  const inner = parseNum(innerVal);
+  const width = parseNum(widthVal);
+  if (!outer && !inner && !width) return null;
+  return { outer: outer, inner: inner, width: width };
+}`;
+
+    /**
+     * 2. ミニチュアベアリング規格データベース (48+規格)
+     */
+    const BEARING_STANDARDS = [
+      { d: 1, D: 3, B: 1, jis: '681', nskOpen: '681', nskZZ: '681ZZ', nmbOpen: 'L-310', nmbZZ: 'DDL-310ZZ', ntnOpen: '681', ntnZZ: '681ZZ', note: '極小マイクロベアリング (1×3×1)' },
+      { d: 1, D: 3, B: 1.5, jis: 'MR31', nskOpen: 'MR31', nskZZ: 'MR31ZZ', nmbOpen: 'L-310W51', nmbZZ: 'DDL-310W51ZZ', ntnOpen: 'MR31', ntnZZ: 'MR31ZZ', note: '極小マイクロベアリング幅広 (1×3×1.5)' },
+      { d: 1, D: 4, B: 1.6, jis: '691', nskOpen: '691', nskZZ: '691ZZ', nmbOpen: 'R-410', nmbZZ: 'DDR-410ZZ', ntnOpen: '691', ntnZZ: '691ZZ', note: '極小マイクロベアリング (1×4×1.6)' },
+      { d: 1.2, D: 4, B: 1.2, jis: '681X-1.2', nskOpen: '681X', nskZZ: '681XZZ', nmbOpen: 'L-412', nmbZZ: 'DDL-412ZZ', ntnOpen: '681X', ntnZZ: '681XZZ', note: '精密小型軸 (1.2×4×1.2)' },
+      { d: 1.5, D: 4, B: 1.2, jis: '681X', nskOpen: '681X', nskZZ: '681XZZ', nmbOpen: 'L-415', nmbZZ: 'DDL-415ZZ', ntnOpen: '681X', ntnZZ: '681XZZ', note: '超小型精密・レベルワインド等' },
+      { d: 1.5, D: 4, B: 2, jis: '691X', nskOpen: '691X', nskZZ: '691XZZ', nmbOpen: 'L-415W2', nmbZZ: 'DDL-415ZZ', ntnOpen: '691X', ntnZZ: '691XZZ', note: '超小型精密機構' },
+      { d: 1.5, D: 5, B: 1.5, jis: '681.5', nskOpen: '681.5', nskZZ: '681.5ZZ', nmbOpen: 'L-515', nmbZZ: 'DDL-515ZZ', ntnOpen: '681.5', ntnZZ: '681.5ZZ', note: '小型精密機構 (1.5×5×1.5)' },
+      { d: 2, D: 5, B: 1.5, jis: '682', nskOpen: '682', nskZZ: '682ZZ', nmbOpen: 'L-520', nmbZZ: 'DDL-520ZZ', ntnOpen: '682', ntnZZ: '682ZZ', note: '小型レベルワインド・精密軸' },
+      { d: 2, D: 5, B: 2.3, jis: '682ZZ', nskOpen: '682', nskZZ: '682ZZ', nmbOpen: 'L-520', nmbZZ: 'DDL-520ZZ', ntnOpen: '682', ntnZZ: '682ZZ', note: 'シールド標準幅' },
+      { d: 2, D: 5, B: 2.5, jis: 'MR52', nskOpen: 'MR52', nskZZ: 'MR52ZZ', nmbOpen: 'L-520W52', nmbZZ: 'DDL-520ZZ', ntnOpen: 'MR52', ntnZZ: 'MR52ZZ', note: 'ウォームシャフト・極小パーツ' },
+      { d: 2, D: 6, B: 1.6, jis: '692-1.6', nskOpen: '692', nskZZ: '692ZZ', nmbOpen: 'L-620W16', nmbZZ: 'DDL-620ZZ', ntnOpen: '692', ntnZZ: '692ZZ', note: '薄型小型軸 (2×6×1.6)' },
+      { d: 2, D: 6, B: 2.3, jis: '692', nskOpen: '692', nskZZ: '692ZZ', nmbOpen: 'L-620', nmbZZ: 'DDL-620ZZ', ntnOpen: '692', ntnZZ: '692ZZ', note: '小型ローラー・ウォーム軸' },
+      { d: 2, D: 6, B: 2.5, jis: 'MR62', nskOpen: 'MR62', nskZZ: 'MR62ZZ', nmbOpen: 'L-620', nmbZZ: 'DDL-620ZZ', ntnOpen: 'MR62', ntnZZ: 'MR62ZZ', note: 'ウォームシャフト受け' },
+      { d: 2, D: 6, B: 3, jis: '692ZZ', nskOpen: '692', nskZZ: '692ZZ', nmbOpen: 'L-620', nmbZZ: 'DDL-620ZZ', ntnOpen: '692', ntnZZ: '692ZZ', note: '小型機構汎用' },
+      { d: 2.5, D: 6, B: 1.8, jis: '682X', nskOpen: '682X', nskZZ: '682XZZ', nmbOpen: 'L-625', nmbZZ: 'DDL-625ZZ', ntnOpen: '682X', ntnZZ: '682XZZ', note: '極薄小型軸' },
+      { d: 2.5, D: 6, B: 2.6, jis: '682XZZ', nskOpen: '682X', nskZZ: '682XZZ', nmbOpen: 'L-625', nmbZZ: 'DDL-625ZZ', ntnOpen: '682X', ntnZZ: '682XZZ', note: 'ウォームシャフト等' },
+      { d: 3, D: 6, B: 2, jis: 'MR63', nskOpen: 'MR63', nskZZ: 'MR63ZZ', nmbOpen: 'L-630', nmbZZ: 'DDL-630ZZ', ntnOpen: 'MR63', ntnZZ: 'MR63ZZ', note: 'ウォームシャフト・極薄' },
+      { d: 3, D: 6, B: 2.5, jis: 'MR63ZZ', nskOpen: 'MR63', nskZZ: 'MR63ZZ', nmbOpen: 'L-630', nmbZZ: 'DDL-630ZZ', ntnOpen: 'MR63', ntnZZ: 'MR63ZZ', note: 'ウォームシャフト定番' },
+      { d: 3, D: 7, B: 2, jis: '683', nskOpen: '683', nskZZ: '683ZZ', nmbOpen: 'L-730', nmbZZ: 'DDL-730ZZ', ntnOpen: '683', ntnZZ: '683ZZ', note: '開放型薄肉・ウォーム軸' },
+      { d: 3, D: 7, B: 3, jis: '683ZZ', nskOpen: '683', nskZZ: '683ZZ', nmbOpen: 'L-730', nmbZZ: 'DDL-730ZZ', ntnOpen: '683', ntnZZ: '683ZZ', note: 'ウォームシャフト・サイドカバー(3×7×3)' },
+      { d: 3, D: 8, B: 3, jis: '693', nskOpen: '693', nskZZ: '693ZZ', nmbOpen: 'L-830', nmbZZ: 'DDL-830ZZ', ntnOpen: '693', ntnZZ: '693ZZ', note: 'BFSスプール・サイドカバー(開放幅)' },
+      { d: 3, D: 8, B: 4, jis: '693ZZ', nskOpen: '693', nskZZ: '693ZZ', nmbOpen: 'L-830', nmbZZ: 'DDL-830ZZ', ntnOpen: '693', ntnZZ: '693ZZ', note: 'BFS機スプール・サイドカップ定番(3×8×4)' },
+      { d: 3, D: 9, B: 3, jis: 'MR93', nskOpen: 'MR93', nskZZ: 'MR93ZZ', nmbOpen: 'L-930', nmbZZ: 'DDL-930ZZ', ntnOpen: 'MR93', ntnZZ: 'MR93ZZ', note: '特殊スプール軸' },
+      { d: 3, D: 9, B: 4, jis: 'MR93ZZ', nskOpen: 'MR93', nskZZ: 'MR93ZZ', nmbOpen: 'L-930', nmbZZ: 'DDL-930ZZ', ntnOpen: 'MR93', ntnZZ: 'MR93ZZ', note: '小型スプール・ローラー' },
+      { d: 3, D: 10, B: 4, jis: '623', nskOpen: '623', nskZZ: '623ZZ', nmbOpen: 'R-1030', nmbZZ: 'DDR-1030ZZ', ntnOpen: '623', ntnZZ: '623ZZ', note: 'ベイトリール スプール/サイドカップ定番(3×10×4)' },
+      { d: 4, D: 7, B: 2, jis: 'MR74', nskOpen: 'MR74', nskZZ: 'MR74ZZ', nmbOpen: 'L-740', nmbZZ: 'DDL-740ZZ', ntnOpen: 'MR74', ntnZZ: 'MR74ZZ', note: 'ハンドルノブ・ウォームシャフト(開放幅)' },
+      { d: 4, D: 7, B: 2.5, jis: 'MR74ZZ', nskOpen: 'MR74', nskZZ: 'MR74ZZ', nmbOpen: 'L-740', nmbZZ: 'DDL-740ZZ', ntnOpen: 'MR74', ntnZZ: 'MR74ZZ', note: 'ハンドルノブ・ウォームシャフト超定番(4×7×2.5)' },
+      { d: 4, D: 8, B: 2, jis: 'MR84', nskOpen: 'MR84', nskZZ: 'MR84ZZ', nmbOpen: 'L-840', nmbZZ: 'DDL-840ZZ', ntnOpen: 'MR84', ntnZZ: 'MR84ZZ', note: 'ウォームシャフト・薄型機構' },
+      { d: 4, D: 8, B: 3, jis: 'MR84ZZ', nskOpen: 'MR84', nskZZ: 'MR84ZZ', nmbOpen: 'L-840', nmbZZ: 'DDL-840ZZ', ntnOpen: 'MR84', ntnZZ: 'MR84ZZ', note: 'ウォームシャフト・ラインローラー(4×8×3)' },
+      { d: 4, D: 9, B: 2.5, jis: '684', nskOpen: '684', nskZZ: '684ZZ', nmbOpen: 'L-940', nmbZZ: 'DDL-940ZZ', ntnOpen: '684', ntnZZ: '684ZZ', note: '開放幅・ラインローラー等' },
+      { d: 4, D: 9, B: 4, jis: '684ZZ', nskOpen: '684', nskZZ: '684ZZ', nmbOpen: 'L-940', nmbZZ: 'DDL-940ZZ', ntnOpen: '684', ntnZZ: '684ZZ', note: 'ラインローラー・ハンドルノブ基部' },
+      { d: 4, D: 10, B: 4, jis: 'MR104ZZ', nskOpen: 'MR104', nskZZ: 'MR104ZZ', nmbOpen: 'L-1040', nmbZZ: 'DDL-1040ZZ', ntnOpen: 'MR104', ntnZZ: 'MR104ZZ', note: 'スプール軸・サイドカップ' },
+      { d: 4, D: 11, B: 4, jis: '694ZZ', nskOpen: '694', nskZZ: '694ZZ', nmbOpen: 'L-1140', nmbZZ: 'DDL-1140ZZ', ntnOpen: '694', ntnZZ: '694ZZ', note: '中型リールスプール・ギア軸' },
+      { d: 5, D: 8, B: 2, jis: 'MR85', nskOpen: 'MR85', nskZZ: 'MR85ZZ', nmbOpen: 'L-850', nmbZZ: 'DDL-850ZZ', ntnOpen: 'MR85', ntnZZ: 'MR85ZZ', note: 'ウォームシャフト・メインシャフト下' },
+      { d: 5, D: 8, B: 2.5, jis: 'MR85ZZ', nskOpen: 'MR85', nskZZ: 'MR85ZZ', nmbOpen: 'L-850', nmbZZ: 'DDL-850ZZ', ntnOpen: 'MR85', ntnZZ: 'MR85ZZ', note: 'ウォームシャフト・ハンドル軸定番(5×8×2.5)' },
+      { d: 5, D: 9, B: 2.5, jis: 'MR95', nskOpen: 'MR95', nskZZ: 'MR95ZZ', nmbOpen: 'L-950', nmbZZ: 'DDL-950ZZ', ntnOpen: 'MR95', ntnZZ: 'MR95ZZ', note: 'スプール軸・ピニオン補助' },
+      { d: 5, D: 9, B: 3, jis: 'MR95ZZ', nskOpen: 'MR95', nskZZ: 'MR95ZZ', nmbOpen: 'L-950', nmbZZ: 'DDL-950ZZ', ntnOpen: 'MR95', ntnZZ: 'MR95ZZ', note: 'スプール軸・ハンドル基部(5×9×3)' },
+      { d: 5, D: 9, B: 4, jis: 'MR95ZZ-W4', nskOpen: 'MR95', nskZZ: 'MR95ZZ', nmbOpen: 'L-950W4', nmbZZ: 'DDL-950ZZ', ntnOpen: 'MR95', ntnZZ: 'MR95ZZ', note: 'スプール軸・ウォームギア側(5×9×4)' },
+      { d: 5, D: 10, B: 3, jis: 'MR105', nskOpen: 'MR105', nskZZ: 'MR105ZZ', nmbOpen: 'L-1050', nmbZZ: 'DDL-1050ZZ', ntnOpen: 'MR105', ntnZZ: 'MR105ZZ', note: 'スプール軸(薄型)' },
+      { d: 5, D: 10, B: 4, jis: 'MR105ZZ', nskOpen: 'MR105', nskZZ: 'MR105ZZ', nmbOpen: 'L-1050', nmbZZ: 'DDL-1050ZZ', ntnOpen: 'MR105', ntnZZ: 'MR105ZZ', note: '中華ベイト スプール/ピニオン定番(5×10×4)' },
+      { d: 5, D: 11, B: 3, jis: '685', nskOpen: '685', nskZZ: '685ZZ', nmbOpen: 'L-1150', nmbZZ: 'DDL-1150ZZ', ntnOpen: '685', ntnZZ: '685ZZ', note: '開放幅・スプール軸' },
+      { d: 5, D: 11, B: 4, jis: 'MR115ZZ', nskOpen: 'MR115', nskZZ: 'MR115ZZ', nmbOpen: 'L-1150W4', nmbZZ: 'DDL-1150ZZ', ntnOpen: 'MR115', ntnZZ: 'MR115ZZ', note: 'ベイトスプール・ピニオン外側最定番(5×11×4)' },
+      { d: 5, D: 11, B: 5, jis: '685ZZ', nskOpen: '685', nskZZ: '685ZZ', nmbOpen: 'L-1150', nmbZZ: 'DDL-1150ZZ', ntnOpen: '685', ntnZZ: '685ZZ', note: 'ピニオン・高負荷ギア軸(5×11×5)' },
+      { d: 6, D: 10, B: 2.5, jis: 'MR106', nskOpen: 'MR106', nskZZ: 'MR106ZZ', nmbOpen: 'L-1060', nmbZZ: 'DDL-1060ZZ', ntnOpen: 'MR106', ntnZZ: 'MR106ZZ', note: 'メインシャフト・スプール受け' },
+      { d: 6, D: 10, B: 3, jis: 'MR106ZZ', nskOpen: 'MR106', nskZZ: 'MR106ZZ', nmbOpen: 'L-1060', nmbZZ: 'DDL-1060ZZ', ntnOpen: 'MR106', ntnZZ: 'MR106ZZ', note: 'スピニングスプール受け・ピニオン内側' },
+      { d: 6, D: 12, B: 4, jis: 'MR126ZZ', nskOpen: 'MR126', nskZZ: 'MR126ZZ', nmbOpen: 'L-1260', nmbZZ: 'DDL-1260ZZ', ntnOpen: 'MR126', ntnZZ: 'MR126ZZ', note: 'ピニオン内側・ドライブ軸' },
+      { d: 7, D: 11, B: 2.5, jis: 'MR117', nskOpen: 'MR117', nskZZ: 'MR117ZZ', nmbOpen: 'L-1170', nmbZZ: 'DDL-1170ZZ', ntnOpen: 'MR117', ntnZZ: 'MR117ZZ', note: 'スピニングラインローラー・スプール受け' },
+      { d: 7, D: 11, B: 3, jis: 'MR117ZZ', nskOpen: 'MR117', nskZZ: 'MR117ZZ', nmbOpen: 'L-1170', nmbZZ: 'DDL-1170ZZ', ntnOpen: 'MR117', ntnZZ: 'MR117ZZ', note: 'スピニングラインローラー・スプール内定番(7×11×3)' },
+      { d: 7, D: 13, B: 4, jis: 'MR137ZZ', nskOpen: 'MR137', nskZZ: 'MR137ZZ', nmbOpen: 'L-1370', nmbZZ: 'DDL-1370ZZ', ntnOpen: 'MR137', ntnZZ: 'MR137ZZ', note: 'スピニング ドライブギア・ピニオン' },
+      { d: 7, D: 14, B: 4, jis: '687', nskOpen: '687', nskZZ: '687ZZ', nmbOpen: 'L-1470', nmbZZ: 'DDL-1470ZZ', ntnOpen: '687', ntnZZ: '687ZZ', note: 'スピニング ドライブギア・メイン軸(7×14×4)' },
+      { d: 7, D: 14, B: 5, jis: '687ZZ', nskOpen: '687', nskZZ: '687ZZ', nmbOpen: 'L-1470', nmbZZ: 'DDL-1470ZZ', ntnOpen: '687', ntnZZ: '687ZZ', note: 'スピニング ドライブギア左右定番(7×14×5)' },
+      { d: 8, D: 12, B: 2.5, jis: 'MR128', nskOpen: 'MR128', nskZZ: 'MR128ZZ', nmbOpen: 'L-1280', nmbZZ: 'DDL-1280ZZ', ntnOpen: 'MR128', ntnZZ: 'MR128ZZ', note: 'ピニオン内側(X-SHIP構造)・クラッチカム' },
+      { d: 8, D: 12, B: 3.5, jis: 'MR128ZZ', nskOpen: 'MR128', nskZZ: 'MR128ZZ', nmbOpen: 'L-1280', nmbZZ: 'DDL-1280ZZ', ntnOpen: 'MR128', ntnZZ: 'MR128ZZ', note: 'ピニオン内側・メインギア軸最定番(8×12×3.5)' },
+      { d: 8, D: 14, B: 4, jis: 'MR148ZZ', nskOpen: 'MR148', nskZZ: 'MR148ZZ', nmbOpen: 'L-1480', nmbZZ: 'DDL-1480ZZ', ntnOpen: 'MR148', ntnZZ: 'MR148ZZ', note: 'メインギア軸・大型ピニオン(8×14×4)' },
+      { d: 8, D: 16, B: 5, jis: '688ZZ', nskOpen: '688', nskZZ: '688ZZ', nmbOpen: 'L-1680', nmbZZ: 'DDL-1680ZZ', ntnOpen: '688', ntnZZ: '688ZZ', note: 'メインギア軸・スピニングドライブギア' },
+      { d: 9, D: 17, B: 5, jis: '689ZZ', nskOpen: '689', nskZZ: '689ZZ', nmbOpen: 'L-1790', nmbZZ: 'DDL-1790ZZ', ntnOpen: '689', ntnZZ: '689ZZ', note: '中型スピニング ドライブギア(Left)' },
+      { d: 10, D: 15, B: 4, jis: '6700ZZ', nskOpen: '6700', nskZZ: '6700ZZ', nmbOpen: 'L-1510', nmbZZ: 'DDL-1510ZZ', ntnOpen: '6700', ntnZZ: '6700ZZ', note: 'メインギアシャフト基部' }
+    ];
+
+    /**
+     * 3. ベイトリール部位定義（8部位）
+     */
+    const BAIT_BEARING_SLOTS = [
+      { key: 'spool', code: '026', label: 'Spool bearing', jp: 'スプールベアリング (シャフト/ボディ側)' },
+      { key: 'sideCover', code: '016', label: 'Side cover bearing', jp: 'サイドカバーベアリング (パーミング側)' },
+      { key: 'pinionOuter', code: '058', label: 'Pinion bearing', jp: 'ピニオンベアリング外側 (メカニカル側)' },
+      { key: 'clutchCam', code: '045', label: 'Clutch cam bearing', jp: 'ピニオンベアリング内側 (X-SHIP/クラッチ側)' },
+      { key: 'handle', code: '084', label: 'Handle bearing', jp: 'ハンドルベアリング (ノブ/基部)' },
+      { key: 'gearShaft', code: '067', label: 'Gear SFT bearing', jp: 'メインギアベアリング (ドライブギア軸)' },
+      { key: 'wormGear', code: '039', label: 'Worm SFT bearing (Gear)', jp: 'ウォームシャフトベアリング (ギア側)' },
+      { key: 'wormCover', code: '---', label: 'Worm SFT bearing (Cover)', jp: 'ウォームシャフトベアリング (カバー側)' }
+    ];
+
+    /**
+     * 4. スピニングリール部位定義（6部位）
+     */
+    const SPIN_BEARING_SLOTS = [
+      { key: 'spool', code: '010', label: 'Spool bearing', jp: 'スプールベアリング (スプール内/受け)' },
+      { key: 'roller', code: '035', label: 'Roller bearing', jp: 'ラインローラーベアリング' },
+      { key: 'pinion', code: '053', label: 'Pinion bearing', jp: 'ピニオンベアリング (上下/主軸)' },
+      { key: 'driveA', code: '073', label: 'Drive bearing (A)', jp: 'ドライブギアベアリング (A / 左側)' },
+      { key: 'driveB', code: '080', label: 'Drive bearing (B)', jp: 'ドライブギアベアリング (B / 右側)' },
+      { key: 'handle', code: '---', label: 'Handle bearing', jp: 'ハンドルノブベアリング' }
+    ];
+
+    /**
+     * 5. 初期プリセットリールデータ
+     */
+    const INITIAL_REELS = [
+      {
+        id: 'anatono-silver-rhino', type: 'bait', brand: 'ANATONO', model: 'SILVER RHINO',
+        gearRatio: 7.0, windingLength: 65.9, spoolDia: 30.0, spoolWidth: 22.6, spoolWeightMain: 5.4, spoolWeightSub: null,
+        notes: '30×22.6mmスプール / ギア比7.0 / 巻上長65.9cm / メインスプール5.4g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'bearking-athena-30', type: 'bait', brand: 'BEARKING', model: 'ATHENA-30',
+        gearRatio: 7.1, windingLength: 66.9, spoolDia: 30.0, spoolWidth: 22.6, spoolWeightMain: 4.6, spoolWeightSub: null,
+        notes: '30×22.6mmスプール / ギア比7.1 / 巻上長66.9cm / メインスプール4.6g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'cemreo-phantom', type: 'bait', brand: 'CEMREO', model: 'Phantom',
+        gearRatio: 7.1, windingLength: 62.4, spoolDia: 28.0, spoolWidth: 22.5, spoolWeightMain: 5.5, spoolWeightSub: null,
+        notes: '28×22.5mmスプール / Spool BB 10×5×4 / Side BB 10×3×4',
+        bearings: { spool: { outer: 10, inner: 5, width: 4 }, sideCover: { outer: 10, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'cemreo-rs', type: 'bait', brand: 'CEMREO', model: 'RS',
+        gearRatio: 7.0, windingLength: 65.9, spoolDia: 30.0, spoolWidth: 26.3, spoolWeightMain: 10.0, spoolWeightSub: null,
+        notes: '30×26.3mmスプール / Side 8×3×4 / Pinion 12×8×3.5 / Handle 9×5×3 / Gear 7×4×2.5',
+        bearings: { spool: null, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: { outer: 12, inner: 8, width: 3.5 }, clutchCam: null, handle: { outer: 9, inner: 5, width: 3 }, gearShaft: { outer: 7, inner: 4, width: 2.5 }, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'dmk-silver-feather-honor-pro', type: 'bait', brand: 'DMK', model: 'SILVER FEATHER HONOR PRO',
+        gearRatio: 7.6, windingLength: 66.8, spoolDia: 28.0, spoolWidth: 22.6, spoolWeightMain: 3.8, spoolWeightSub: 7.6,
+        notes: '28×22.6mmスプール / ギア比7.6 / 巻上長66.8cm / メイン3.8g / サブ7.6g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'dovierro-acura-hicc50', type: 'bait', brand: 'DOVIERRO', model: 'acura hicc50',
+        gearRatio: 8.1, windingLength: 76.3, spoolDia: 30.0, spoolWidth: 22.4, spoolWeightMain: 8.0, spoolWeightSub: null,
+        notes: '30×22.4mmスプール / ギア比8.1 / Spool BB 8×3×4 / Side BB 8×3×4',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'haibo-araise-air', type: 'bait', brand: 'HAIBO', model: 'ARAISE AIR',
+        gearRatio: 8.1, windingLength: 71.2, spoolDia: 28.0, spoolWidth: 22.0, spoolWeightMain: 5.3, spoolWeightSub: null,
+        notes: '28×22mmスプール / メインスプール5.3g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'hautton-merak', type: 'bait', brand: 'HautTon', model: 'Merak',
+        gearRatio: 7.1, windingLength: 71.3, spoolDia: 32.0, spoolWidth: 24.5, spoolWeightMain: 7.0, spoolWeightSub: null,
+        notes: '32×24.5mmスプール / Spool BB 10×3×4 / Side BB 8×3×4',
+        bearings: { spool: { outer: 10, inner: 3, width: 4 }, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'histar-auroraair', type: 'bait', brand: 'Histar', model: 'AuroraAir',
+        gearRatio: 8.1, windingLength: 71.2, spoolDia: 28.0, spoolWidth: 23.0, spoolWeightMain: 4.5, spoolWeightSub: null,
+        notes: '28×23mmスプール / Spool 8×3×4 / Side 7×3×3 / Pinion 8×5×2.5 / Clutch 12×8×3.5 / Handle 12×8×3.5 / Gear 8×3×3 / Worm 7×4×2',
+        bearings: {
+          spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 7, inner: 3, width: 3 },
+          pinionOuter: { outer: 8, inner: 5, width: 2.5 }, clutchCam: { outer: 12, inner: 8, width: 3.5 },
+          handle: { outer: 12, inner: 8, width: 3.5 }, gearShaft: { outer: 8, inner: 3, width: 3 },
+          wormGear: { outer: 7, inner: 4, width: 2 }, wormCover: null
+        }
+      },
+      {
+        id: 'histar-verdant', type: 'bait', brand: 'Histar', model: 'Verdant',
+        gearRatio: 7.2, windingLength: 63.3, spoolDia: 28.0, spoolWidth: 22.5, spoolWeightMain: 5.0, spoolWeightSub: null,
+        notes: '28×22.5mmスプール / Spool 10×4×4 / Side 10×3×4 / Pinion 8×5×2.5 / Gear 12×8×3.5 / WormGear 9×5×4 / WormCover 7×4×2',
+        bearings: {
+          spool: { outer: 10, inner: 4, width: 4 }, sideCover: { outer: 10, inner: 3, width: 4 },
+          pinionOuter: { outer: 8, inner: 5, width: 2.5 }, clutchCam: null, handle: null,
+          gearShaft: { outer: 12, inner: 8, width: 3.5 }, wormGear: { outer: 9, inner: 5, width: 4 },
+          wormCover: { outer: 7, inner: 4, width: 2 }
+        }
+      },
+      {
+        id: 'histar-giu99carbon', type: 'bait', brand: 'Histar', model: 'GIU99Carbon',
+        gearRatio: 8.1, windingLength: 71.2, spoolDia: 28.0, spoolWidth: 23.0, spoolWeightMain: 3.4, spoolWeightSub: null,
+        notes: '28×23mm超軽量カーボンBFS / メインスプール3.4g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'kastking-valiant-eagle-ii', type: 'bait', brand: 'KASTKING', model: 'Valiant EagleⅡ',
+        gearRatio: 8.4, windingLength: 73.9, spoolDia: 28.0, spoolWidth: 22.6, spoolWeightMain: 5.5, spoolWeightSub: null,
+        notes: '28×22.6mmスプール / Spool BB 8×3×4 / Side BB 7×3×3',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 7, inner: 3, width: 3 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'kingdom-micromonsterpro', type: 'bait', brand: 'KINGDOM', model: 'MicroMonsterPro',
+        gearRatio: 7.6, windingLength: 76.4, spoolDia: 32.0, spoolWidth: 25.0, spoolWeightMain: 6.2, spoolWeightSub: 6.2,
+        notes: '32×25mmスプール / メイン6.2g / サブ6.2g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'leydun-usopp', type: 'bait', brand: 'LEYDUN', model: 'USOPP',
+        gearRatio: 7.6, windingLength: 71.6, spoolDia: 30.0, spoolWidth: 24.0, spoolWeightMain: 6.0, spoolWeightSub: null,
+        notes: '30×24mmスプール / Spool BB 8×3×4 / Side BB 8×3×4',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'lingwo-a007', type: 'bait', brand: 'Lingwo', model: 'A007',
+        gearRatio: 7.6, windingLength: 71.6, spoolDia: 30.0, spoolWidth: 22.8, spoolWeightMain: 4.8, spoolWeightSub: null,
+        notes: '30×22.8mmスプール / Spool BB 8×3×4 / Side BB 7×3×3',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 7, inner: 3, width: 3 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'lizard-boki-pro', type: 'bait', brand: 'LIZARD', model: 'BOKI PRO',
+        gearRatio: 7.6, windingLength: 71.6, spoolDia: 30.0, spoolWidth: 24.0, spoolWeightMain: 5.5, spoolWeightSub: null,
+        notes: '30×24mmスプール / Spool 8×3×4 / Side 8×3×4 / Pinion 14×8×4',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: { outer: 14, inner: 8, width: 4 }, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'loongze-a51mc', type: 'bait', brand: 'LOONGZE', model: 'A51MC',
+        gearRatio: 8.1, windingLength: 71.2, spoolDia: 28.0, spoolWidth: null, spoolWeightMain: 2.2, spoolWeightSub: null,
+        notes: '28mm径超軽量スプール 2.2g',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'purelure-silver-feather-elite', type: 'bait', brand: 'PURELURE', model: 'SILVER FEATHER ELITE',
+        gearRatio: 8.5, windingLength: 74.7, spoolDia: 28.0, spoolWidth: 22.6, spoolWeightMain: 4.9, spoolWeightSub: null,
+        notes: '28×22.6mmスプール / ギア比8.5 / 巻上長74.7cm',
+        bearings: { spool: null, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'sabre-jks51', type: 'bait', brand: 'SABRE', model: 'JKS51',
+        gearRatio: 6.3, windingLength: 59.3, spoolDia: 30.0, spoolWidth: 23.6, spoolWeightMain: 8.0, spoolWeightSub: null,
+        notes: '30×23.6mmスプール / Spool BB 10×5×4 / Side BB 10×3×4',
+        bearings: { spool: { outer: 10, inner: 5, width: 4 }, sideCover: { outer: 10, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'seasir-cast-x', type: 'bait', brand: 'SEASIR', model: 'CAST-X',
+        gearRatio: 7.3, windingLength: 76.8, spoolDia: 33.5, spoolWidth: 25.0, spoolWeightMain: 8.7, spoolWeightSub: 12.7,
+        notes: '33.5×25mmスプール / Spool 10×5×4 / Side 10×3×4',
+        bearings: { spool: { outer: 10, inner: 5, width: 4 }, sideCover: { outer: 10, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'seasir-dcast', type: 'bait', brand: 'SEASIR', model: 'DCAST',
+        gearRatio: 7.3, windingLength: 76.8, spoolDia: 33.5, spoolWidth: 25.0, spoolWeightMain: 15.9, spoolWeightSub: null,
+        notes: '33.5×25mm DCスプール / Spool BB 7×3×3',
+        bearings: { spool: { outer: 7, inner: 3, width: 3 }, sideCover: null, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'sembo-houggauan', type: 'bait', brand: 'SEMBO', model: 'HOUGGAUAN',
+        gearRatio: 7.3, windingLength: 75.4, spoolDia: 32.9, spoolWidth: 26.0, spoolWeightMain: 7.7, spoolWeightSub: null,
+        notes: '32.9×26mmスプール / Spool BB 9×5×3 / Side BB 10×3×4',
+        bearings: { spool: { outer: 9, inner: 5, width: 3 }, sideCover: { outer: 10, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'tsurinoya-kf-50l', type: 'bait', brand: 'TSURINOYA', model: 'KF-50L',
+        gearRatio: 7.0, windingLength: 65.9, spoolDia: 30.0, spoolWidth: 22.4, spoolWeightMain: null, spoolWeightSub: null,
+        notes: '30×22.4mmスプール / Spool BB 8×3×4 / Side BB 8×3×4',
+        bearings: { spool: { outer: 8, inner: 3, width: 4 }, sideCover: { outer: 8, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: null, gearShaft: null, wormGear: null, wormCover: null }
+      },
+      {
+        id: 'unknown-atd200', type: 'bait', brand: '不明', model: 'ATD200',
+        gearRatio: 7.1, windingLength: 82.5, spoolDia: 37.0, spoolWidth: 26.4, spoolWeightMain: null, spoolWeightSub: null,
+        notes: '37×26.4mmスプール / Spool 10×5×4 / Side 10×3×4 / Handle 14×8×4 / Gear 9×5×3 / Worm 7×4×2',
+        bearings: { spool: { outer: 10, inner: 5, width: 4 }, sideCover: { outer: 10, inner: 3, width: 4 }, pinionOuter: null, clutchCam: null, handle: { outer: 14, inner: 8, width: 4 }, gearShaft: { outer: 9, inner: 5, width: 3 }, wormGear: { outer: 7, inner: 4, width: 2 }, wormCover: null }
+      },
+      // スピニングリール
+      {
+        id: 'unknown-mk1500s', type: 'spinning', brand: '不明 (OEM)', model: 'MK1500S',
+        gearRatio: 5.2, windingLength: 65.3, spoolDia: 40.0, spoolWidth: 14.5, spoolWeightMain: null, spoolWeightSub: null,
+        notes: '1500番シャロースプールスピニング・エリアトラウト/アジング向け',
+        bearings: {
+          spool: { outer: 11, inner: 7, width: 3 }, roller: { outer: 7, inner: 4, width: 2.5 },
+          pinion: { outer: 13, inner: 7, width: 4 }, driveA: { outer: 14, inner: 7, width: 5 },
+          driveB: { outer: 11, inner: 7, width: 3 }, handle: { outer: 7, inner: 4, width: 2.5 }
+        }
+      },
+      {
+        id: 'histar-aurora-2000s', type: 'spinning', brand: 'Histar', model: 'Aurora Air 2000S',
+        gearRatio: 5.2, windingLength: 68.6, spoolDia: 42.0, spoolWidth: 15.0, spoolWeightMain: 21.5, spoolWeightSub: null,
+        notes: 'カーボンローター採用軽量スピニング・ラインローラー2BB化対応',
+        bearings: {
+          spool: { outer: 10, inner: 6, width: 3 }, roller: { outer: 7, inner: 4, width: 2.5 },
+          pinion: { outer: 14, inner: 7, width: 5 }, driveA: { outer: 14, inner: 7, width: 5 },
+          driveB: { outer: 13, inner: 7, width: 4 }, handle: { outer: 7, inner: 4, width: 2.5 }
+        }
+      },
+      {
+        id: 'seasir-stream-1000s', type: 'spinning', brand: 'SEASIR', model: 'STREAM 1000S',
+        gearRatio: 5.2, windingLength: 62.2, spoolDia: 38.0, spoolWidth: 13.5, spoolWeightMain: 18.4, spoolWeightSub: null,
+        notes: '渓流・アジング向け1000Sシャロースプールモデル',
+        bearings: {
+          spool: { outer: 11, inner: 7, width: 3 }, roller: { outer: 7, inner: 4, width: 2.5 },
+          pinion: { outer: 12, inner: 7, width: 3.5 }, driveA: { outer: 14, inner: 7, width: 5 },
+          driveB: { outer: 11, inner: 7, width: 3 }, handle: { outer: 7, inner: 4, width: 2.5 }
+        }
+      }
+    ];
+
+    /**
+     * 6. 状態管理 & Storage Keys
+     */
+    const STORAGE_KEY = 'cdm_reel_spec_db_v3';
+    const GAS_URL_KEY = 'cdm_reel_gas_webapp_url';
+    const SYNC_META_KEY = 'cdm_reel_sync_meta';
+    const FORM_URL_KEY = 'cdm_reel_google_form_url';
+    const DEFAULT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScum2-1nP5i3C7v9m8k2x4z6w8y0q1a3s5d7f9g1h3j5k7l9/viewform';
+
+    let reelsDB = [];
+    let selectedBaitId = '';
+    let selectedSpinId = '';
+    let onlyWithBearings = false;
+    let compareIds = [];
+    let compareOpen = false;
+    let isSyncUnlocked = false;
+
+    /**
+     * 7. ユーティリティ関数
+     */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200',
+        error: 'bg-rose-950/95 border-rose-500/60 text-rose-200',
+        info: 'bg-slate-900/95 border-cyan-500/60 text-cyan-200'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto border rounded-xl px-4 py-3 text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md transition-all transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+      el.textContent = message;
+      container.appendChild(el);
+      requestAnimationFrame(() => {
+        el.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => el.remove(), 250);
+      }, 3600);
+    }
+
+    function openConfirm(title, message, onConfirm) {
+      const modal = document.getElementById('confirm-modal');
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const okBtn = document.getElementById('confirm-ok-btn');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+      okBtn.onclick = () => { cleanup(); onConfirm(); };
+      cancelBtn.onclick = cleanup;
+    }
+
+    function copyTextToClipboard(text, label = 'コピーしました') {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(label, 'success');
+      } catch (e) {
+        showToast('コピーに失敗しました', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    function findBearingSpec(bb) {
+      if (!bb || (!bb.inner && !bb.outer && !bb.width)) return null;
+      const exact = BEARING_STANDARDS.find(s =>
+        Number(s.d) === Number(bb.inner) &&
+        Number(s.D) === Number(bb.outer) &&
+        Number(s.B) === Number(bb.width)
+      );
+      if (exact) return exact;
+      return BEARING_STANDARDS.find(s => Number(s.d) === Number(bb.inner) && Number(s.D) === Number(bb.outer)) || null;
+    }
+
+    function formatBBDim(bb) {
+      if (!bb || (!bb.outer && !bb.inner && !bb.width)) return '—';
+      const o = bb.outer ?? '?';
+      const i = bb.inner ?? '?';
+      const w = bb.width ?? '?';
+      return `${o} × ${i} × ${w} mm`;
+    }
+
+    function calcMaxWinding(reel) {
+      if (reel.windingLength) return Number(reel.windingLength).toFixed(1);
+      if (reel.spoolDia && reel.gearRatio) {
+        return ((Number(reel.spoolDia) * Math.PI * Number(reel.gearRatio)) / 10).toFixed(1);
+      }
+      return '—';
+    }
+
+    function hasAnyBearingData(reel) {
+      if (!reel || !reel.bearings) return false;
+      return Object.values(reel.bearings).some(b => b && (b.outer || b.inner || b.width));
+    }
+
+    /**
+     * スプレッドシート連携タブのロック状態反映
+     */
+    function applySyncLockUI() {
+      const lockScreen = document.getElementById('sync-lock-screen');
+      const unlockedPanel = document.getElementById('sync-unlocked-content');
+      const tabIcon = document.getElementById('sync-tab-lock-icon');
+
+      if (isSyncUnlocked) {
+        lockScreen.classList.add('hidden');
+        unlockedPanel.classList.remove('hidden');
+        tabIcon.className = 'w-4 h-4 text-emerald-400';
+      } else {
+        lockScreen.classList.remove('hidden');
+        unlockedPanel.classList.add('hidden');
+        tabIcon.className = 'w-4 h-4 text-amber-400';
+      }
+    }
+
+    /**
+     * 8. DBロード＆保存・ヘッダーステータス更新
+     */
+    function loadDatabase() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            reelsDB = parsed;
+            return;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      reelsDB = JSON.parse(JSON.stringify(INITIAL_REELS));
+    }
+
+    function saveDatabase(sourceDesc = null) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reelsDB));
+        if (sourceDesc) {
+          localStorage.setItem(SYNC_META_KEY, JSON.stringify({
+            source: sourceDesc,
+            updatedAt: new Date().toLocaleString('ja-JP')
+          }));
+        }
+      } catch (e) {
+        showToast('ローカルストレージへの保存に失敗しました', 'error');
+      }
+      updateHeaderStats();
+    }
+
+    function updateHeaderStats() {
+      document.getElementById('header-reel-count').textContent = reelsDB.length;
+      document.getElementById('mobile-db-count').textContent = reelsDB.length;
+
+      const metaRaw = localStorage.getItem(SYNC_META_KEY);
+      const sourceLabel = document.getElementById('sync-source-label');
+      const statusDot = document.getElementById('sync-status-dot');
+      const gasInfo = document.getElementById('gas-last-sync-info');
+
+      if (metaRaw) {
+        try {
+          const meta = JSON.parse(metaRaw);
+          sourceLabel.textContent = meta.source;
+          statusDot.className = 'w-2 h-2 rounded-full bg-cyan-400';
+          if (gasInfo) {
+            gasInfo.textContent = `最終反映: ${meta.updatedAt} (${meta.source})`;
+          }
+        } catch (e) {}
+      } else {
+        sourceLabel.textContent = '内蔵プリセット';
+        statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+      }
+    }
+
+    /**
+     * 9. スプレッドシート / Excel / CSV パーサー (DATA(ベイト) & DATA(スピニング) 対応)
+     */
+    function parseNum(v) {
+      if (v === '' || v === null || v === undefined || v === '-' || v === 'Nothing') return null;
+      const n = parseFloat(String(v).replace(/[^0-9.-]/g, ''));
+      return isNaN(n) ? null : n;
+    }
+
+    function parseBB(outerVal, innerVal, widthVal) {
+      const outer = parseNum(outerVal);
+      const inner = parseNum(innerVal);
+      const width = parseNum(widthVal);
+      if (!outer && !inner && !width) return null;
+      return { outer, inner, width };
+    }
+
+    function parseBaitSheetRows(rows) {
+      const result = [];
+      for (let r = 4; r < rows.length; r++) {
+        const row = rows[r] || [];
+        const brand = String(row[1] ?? '').trim();
+        const model = String(row[2] ?? '').trim();
+        if (!brand && !model) continue;
+        if (brand.toLowerCase() === 'brand' && model.toLowerCase() === 'model') continue;
+
+        result.push({
+          id: `bait-imp-${r}-${(brand + '-' + model).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          type: 'bait',
+          brand: brand || '不明',
+          model: model || '名称未設定',
+          gearRatio: parseNum(row[3]),
+          windingLength: parseNum(row[4]),
+          spoolDia: parseNum(row[5]),
+          spoolWidth: parseNum(row[6]),
+          spoolWeightMain: parseNum(row[7]),
+          spoolWeightSub: parseNum(row[8]),
+          bearings: {
+            spool:       parseBB(row[9],  row[10], row[11]),
+            sideCover:   parseBB(row[12], row[13], row[14]),
+            pinionOuter: parseBB(row[15], row[16], row[17]),
+            clutchCam:   parseBB(row[18], row[19], row[20]),
+            handle:      parseBB(row[21], row[22], row[23]),
+            gearShaft:   parseBB(row[24], row[25], row[26]),
+            wormGear:    parseBB(row[27], row[28], row[29]),
+            wormCover:   parseBB(row[30], row[31], row[32])
+          },
+          notes: String(row[33] ?? '').trim()
+        });
+      }
+      return result;
+    }
+
+    function parseSpinningSheetRows(rows) {
+      const result = [];
+      for (let r = 4; r < rows.length; r++) {
+        const row = rows[r] || [];
+        const brand = String(row[1] ?? '').trim();
+        const model = String(row[2] ?? '').trim();
+        if (!brand && !model) continue;
+        if (brand.toLowerCase() === 'brand' && model.toLowerCase() === 'model') continue;
+
+        result.push({
+          id: `spin-imp-${r}-${(brand + '-' + model).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          type: 'spinning',
+          brand: brand || '不明',
+          model: model || '名称未設定',
+          gearRatio: parseNum(row[3]),
+          windingLength: parseNum(row[4]),
+          spoolDia: parseNum(row[5]),
+          spoolWidth: null,
+          spoolWeightMain: null,
+          spoolWeightSub: null,
+          bearings: {
+            spool:  parseBB(row[6],  row[7],  row[8]),
+            roller: parseBB(row[9],  row[10], row[11]),
+            pinion: parseBB(row[12], row[13], row[14]),
+            driveA: parseBB(row[15], row[16], row[17]),
+            driveB: parseBB(row[18], row[19], row[20]),
+            handle: parseBB(row[21], row[22], row[23])
+          },
+          notes: String(row[24] ?? '').trim()
+        });
+      }
+      return result;
+    }
+
+    function handleSpreadsheetFile(file) {
+      if (!file) return;
+      if (typeof XLSX === 'undefined') {
+        showToast('Excel/CSVパーサーの読み込みに失敗しました。ネット接続を確認してください。', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          let parsedReels = [];
+
+          const baitSheetName = workbook.SheetNames.find(n => n.includes('ベイト') || n.toUpperCase().includes('BAIT'));
+          const spinSheetName = workbook.SheetNames.find(n => n.includes('スピニング') || n.toUpperCase().includes('SPIN'));
+
+          if (baitSheetName) {
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[baitSheetName], { header: 1, defval: '' });
+            parsedReels = parsedReels.concat(parseBaitSheetRows(rows));
+          }
+          if (spinSheetName) {
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[spinSheetName], { header: 1, defval: '' });
+            parsedReels = parsedReels.concat(parseSpinningSheetRows(rows));
+          }
+
+          if (!baitSheetName && !spinSheetName && workbook.SheetNames.length > 0) {
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+            const maxCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+            if (maxCols >= 28) {
+              parsedReels = parseBaitSheetRows(rows);
+            } else {
+              parsedReels = parseSpinningSheetRows(rows);
+            }
+          }
+
+          if (parsedReels.length === 0) {
+            showToast('有効なリールデータが見つかりませんでした。シート構成（5行目以降・B列からBrand）を確認してください。', 'error');
+            return;
+          }
+
+          const importedTypes = new Set(parsedReels.map(r => r.type));
+          const keptReels = reelsDB.filter(r => !importedTypes.has(r.type));
+          reelsDB = [...parsedReels, ...keptReels];
+
+          saveDatabase(`ファイル取込: ${file.name}`);
+          refreshAllViews();
+          showToast(`${parsedReels.length} 件のリールデータを読み込みました！`, 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('ファイルの解析中にエラーが発生しました: ' + err.message, 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    /**
+     * 10. GAS Web App JSON API 同期
+     */
+    async function syncFromGasApi(urlOverride = null) {
+      const inputEl = document.getElementById('gas-url-input');
+      const rawUrl = (urlOverride || inputEl.value || '').trim();
+      if (!rawUrl) {
+        showToast('GAS ウェブアプリURLを入力してください', 'error');
+        return;
+      }
+      if (!rawUrl.startsWith('https://script.google.com/')) {
+        showToast('有効な Google Apps Script URL (https://script.google.com/...) を入力してください', 'error');
+        return;
+      }
+
+      localStorage.setItem(GAS_URL_KEY, rawUrl);
+
+      const headerIcon = document.getElementById('header-sync-icon');
+      const btnSpinner = document.getElementById('gas-btn-spinner');
+      headerIcon.classList.add('animate-spin');
+      if (btnSpinner) btnSpinner.classList.add('animate-spin');
+
+      try {
+        const res = await fetch(rawUrl, { method: 'GET', redirect: 'follow' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
+          throw new Error('JSON内に有効な reels 配列が含まれていません');
+        }
+
+        reelsDB = data.reels;
+        saveDatabase('GAS 非公開シート同期');
+        refreshAllViews();
+        showToast(`スプレッドシートと同期完了（全 ${reelsDB.length} 機種）`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('同期失敗: GASのデプロイ設定（アクセスできるユーザー: 全員）とURLを確認してください', 'error');
+      } finally {
+        headerIcon.classList.remove('animate-spin');
+        if (btnSpinner) btnSpinner.classList.remove('animate-spin');
+      }
+    }
+
+    /**
+     * 11. ベイトリール検索 & 詳細描画
+     */
+    function getFilteredBaitReels() {
+      const brandVal = document.getElementById('bait-brand-select').value;
+      const kw = document.getElementById('bait-keyword').value.trim().toLowerCase();
+      const spoolVal = document.getElementById('bait-spool-filter').value;
+
+      return reelsDB.filter(r => {
+        if (r.type !== 'bait') return false;
+        if (brandVal !== 'ALL' && r.brand !== brandVal) return false;
+        if (onlyWithBearings && !hasAnyBearingData(r)) return false;
+        if (spoolVal !== 'ALL') {
+          const d = Number(r.spoolDia);
+          if (!d) return false;
+          if (spoolVal === '28' && Math.round(d) !== 28) return false;
+          if (spoolVal === '30' && Math.round(d) !== 30) return false;
+          if (spoolVal === '32' && Math.round(d) !== 32) return false;
+          if (spoolVal === '34+' && d < 33.5) return false;
+        }
+        if (kw) {
+          const hay = `${r.brand} ${r.model} ${r.spoolDia || ''}mm ${r.notes || ''}`.toLowerCase();
+          if (!hay.includes(kw)) return false;
+        }
+        return true;
+      });
+    }
+
+    function populateBaitControls() {
+      const baitReels = reelsDB.filter(r => r.type === 'bait');
+      const brands = [...new Set(baitReels.map(r => r.brand))].sort();
+      const brandSelect = document.getElementById('bait-brand-select');
+      const prevBrand = brandSelect.value;
+
+      brandSelect.innerHTML = `<option value="ALL">すべてのブランド (${baitReels.length})</option>` +
+        brands.map(b => {
+          const cnt = baitReels.filter(r => r.brand === b).length;
+          return `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${cnt})</option>`;
+        }).join('');
+
+      if (prevBrand && (prevBrand === 'ALL' || brands.includes(prevBrand))) {
+        brandSelect.value = prevBrand;
+      }
+      updateBaitModelDropdown();
+    }
+
+    function updateBaitModelDropdown() {
+      const filtered = getFilteredBaitReels();
+      const modelSelect = document.getElementById('bait-model-select');
+      const pillsContainer = document.getElementById('bait-quick-pills');
+      document.getElementById('bait-match-count').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        modelSelect.innerHTML = '<option value="">条件に一致する機種がありません</option>';
+        pillsContainer.innerHTML = '<span class="text-xs text-slate-500">該当なし</span>';
+        renderBaitDetail(null);
+        return;
+      }
+
+		modelSelect.innerHTML = filtered.map(r => {
+		  const gearTxt = r.gearRatio ? ` [${r.gearRatio}]` : '';
+		  const spoolTxt = r.spoolDia ? ` (${r.spoolDia}mm)` : '';
+		  return `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}${gearTxt}${spoolTxt}</option>`;
+		}).join('');
+
+      if (!filtered.some(r => r.id === selectedBaitId)) {
+        selectedBaitId = filtered[0].id;
+      }
+      modelSelect.value = selectedBaitId;
+
+      pillsContainer.innerHTML = filtered.slice(0, 30).map(r => {
+        const active = r.id === selectedBaitId;
+        const hasBB = hasAnyBearingData(r);
+        return `<button type="button" data-select-bait="${escapeHtml(r.id)}" class="px-2.5 py-1 rounded-lg text-xs whitespace-nowrap border transition-all flex items-center gap-1.5 ${
+          active
+            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold'
+            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+        }">
+          ${hasBB ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>' : ''}
+          <span> ${escapeHtml(r.model)}</span>
+        </button>`;
+      }).join('');
+
+      pillsContainer.querySelectorAll('[data-select-bait]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedBaitId = btn.getAttribute('data-select-bait');
+          updateBaitModelDropdown();
+        });
+      });
+
+      const currentReel = filtered.find(r => r.id === selectedBaitId) || filtered[0];
+      renderBaitDetail(currentReel);
+    }
+
+    function renderBaitDetail(reel) {
+      const container = document.getElementById('bait-detail-container');
+      if (!reel) {
+        container.innerHTML = `
+          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
+            条件に一致するベイトリールがありません。フィルタを解除してください。
+          </div>`;
+        return;
+      }
+
+      const maxWind = calcMaxWinding(reel);
+      const isCompared = compareIds.includes(reel.id);
+
+      const bearingRowsHtml = BAIT_BEARING_SLOTS.map(slot => {
+        const bb = reel.bearings ? reel.bearings[slot.key] : null;
+        const spec = findBearingSpec(bb);
+        const dimText = formatBBDim(bb);
+
+        return `
+          <tr class="hover:bg-slate-850/70 transition-colors">
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
+                <div>
+                  <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
+                  <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">
+              ${escapeHtml(dimText)}
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs">
+              ${spec ? `<span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '<span class="text-slate-600">—</span>'}
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
+              ${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '<span class="text-slate-600">—</span>'}
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
+              ${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '<span class="text-slate-600">—</span>'}
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-300">
+              ${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '<span class="text-slate-600">—</span>'}
+            </td>
+          </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
+                <span class="text-xs font-mono text-slate-500">BAITCASTING</span>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" id="detail-compare-toggle" class="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                isCompared
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                  : 'bg-slate-850 hover:bg-slate-800 border-slate-700 text-slate-300'
+              }">
+                ${isCompared ? '✓ 比較リスト追加済み' : '+ 比較リストに追加'}
+              </button>
+              <button type="button" id="copy-reel-spec-btn" class="px-3.5 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-xs text-cyan-300 font-semibold transition-colors">
+                スペックをコピー
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-cyan-400">MAX WINDING</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-cyan-300 mt-0.5 tabular-nums">${maxWind !== '—' ? maxWind + ' cm' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">SPOOL DIA</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolDia ? reel.spoolDia + ' mm' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">SPOOL WIDTH</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolWidth ? reel.spoolWidth + ' mm' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-emerald-400">SPOOL (MAIN)</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightMain ? reel.spoolWeightMain + ' g' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">SPOOL (SUB)</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-slate-200 mt-0.5 tabular-nums">${reel.spoolWeightSub ? reel.spoolWeightSub + ' g' : '—'}</div>
+            </div>
+          </div>
+
+          ${reel.notes ? `
+            <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
+              <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
+              <span>${escapeHtml(reel.notes)}</span>
+            </div>` : ''}
+        </div>
+
+        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <h4 class="text-xs sm:text-sm font-bold text-white">部位別ベアリング寸法 ＆ 互換メーカー品番自動照合</h4>
+            <span class="text-[11px] text-slate-400">寸法表記: 外径(D) × 内径(d) × 幅(B)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                  <th class="py-3 px-4">部位コード / 名称</th>
+                  <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
+                  <th class="py-3 px-4">JIS呼び番号</th>
+                  <th class="py-3 px-4">NSK (開放 / ZZ)</th>
+                  <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
+                  <th class="py-3 px-4">NTN (開放 / ZZ)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/70">${bearingRowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
+      document.getElementById('copy-reel-spec-btn').onclick = () => {
+        const lines = [
+          `【${reel.brand} ${reel.model}】`,
+          `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`
+        ];
+        BAIT_BEARING_SLOTS.forEach(s => {
+          const bb = reel.bearings?.[s.key];
+          if (bb && (bb.outer || bb.inner || bb.width)) {
+            const spec = findBearingSpec(bb);
+            lines.push(`・${s.label} (${s.code}): ${formatBBDim(bb)}${spec ? ` [${spec.jis} / ${spec.nmbZZ}]` : ''}`);
+          }
+        });
+        copyTextToClipboard(lines.join('\n'), '機種スペックとベアリング一覧をコピーしました');
+      };
+    }
+
+    /**
+     * 12. 機種比較ロジック
+     */
+    function toggleCompareId(id) {
+      const idx = compareIds.indexOf(id);
+      if (idx >= 0) {
+        compareIds.splice(idx, 1);
+      } else {
+        if (compareIds.length >= 3) {
+          showToast('比較できるのは最大3機種までです', 'error');
+          return;
+        }
+        compareIds.push(id);
+        compareOpen = true;
+      }
+      updateCompareUI();
+      updateBaitModelDropdown();
+    }
+
+    function updateCompareUI() {
+      document.getElementById('compare-count-badge').textContent = compareIds.length;
+      const clearBtn = document.getElementById('clear-compare-btn');
+      clearBtn.classList.toggle('hidden', compareIds.length === 0);
+
+      const section = document.getElementById('compare-section');
+      const grid = document.getElementById('compare-grid-container');
+
+      if (!compareOpen || compareIds.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+
+      const items = compareIds.map(id => reelsDB.find(r => r.id === id)).filter(Boolean);
+      const headerCols = items.map(r => `
+        <th class="py-3 px-4 min-w-[200px] border-l border-slate-800 align-top">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-[11px] font-mono text-cyan-400">${escapeHtml(r.brand)}</div>
+              <div class="text-sm font-bold text-white">${escapeHtml(r.model)}</div>
+            </div>
+            <button type="button" data-remove-compare="${escapeHtml(r.id)}" class="text-xs text-slate-500 hover:text-rose-400 px-1.5 py-0.5 rounded bg-slate-950">×</button>
+          </div>
+        </th>`).join('');
+
+      const metricRows = [
+        { label: 'ギア比', fn: r => r.gearRatio ? `${Number(r.gearRatio).toFixed(1)}:1` : '—' },
+        { label: '最大巻上長', fn: r => calcMaxWinding(r) !== '—' ? `${calcMaxWinding(r)} cm` : '—' },
+        { label: 'スプール径 × 幅', fn: r => `${r.spoolDia || '—'} × ${r.spoolWidth || '—'} mm` },
+        { label: 'メインスプール重量', fn: r => r.spoolWeightMain ? `${r.spoolWeightMain} g` : '—' },
+        ...BAIT_BEARING_SLOTS.slice(0, 6).map(s => ({
+          label: `${s.label} (${s.code})`,
+          fn: r => {
+            const bb = r.bearings?.[s.key];
+            if (!bb || (!bb.outer && !bb.inner)) return '—';
+            const spec = findBearingSpec(bb);
+            return `${formatBBDim(bb)}${spec ? ` (${spec.jis})` : ''}`;
+          }
+        }))
+      ].map(row => `
+        <tr class="border-t border-slate-800/80">
+          <td class="py-2.5 px-4 text-xs font-medium text-slate-400 bg-slate-950/50 whitespace-nowrap">${escapeHtml(row.label)}</td>
+          ${items.map(r => `<td class="py-2.5 px-4 text-xs font-mono text-slate-200 border-l border-slate-800">${escapeHtml(row.fn(r))}</td>`).join('')}
+        </tr>`).join('');
+
+      grid.innerHTML = `
+        <table class="w-full text-left border-collapse border border-slate-800 rounded-xl overflow-hidden">
+          <thead>
+            <tr class="bg-slate-950/80">
+              <th class="py-3 px-4 text-xs font-mono text-slate-400 w-44">項目</th>
+              ${headerCols}
+            </tr>
+          </thead>
+          <tbody>${metricRows}</tbody>
+        </table>`;
+
+      grid.querySelectorAll('[data-remove-compare]').forEach(btn => {
+        btn.onclick = () => toggleCompareId(btn.getAttribute('data-remove-compare'));
+      });
+    }
+
+    /**
+     * 13. スピニングリール検索 & 詳細描画
+     */
+    function populateSpinningControls() {
+      const spinReels = reelsDB.filter(r => r.type === 'spinning');
+      const brands = [...new Set(spinReels.map(r => r.brand))].sort();
+      const brandSelect = document.getElementById('spin-brand-select');
+      const prevBrand = brandSelect.value;
+
+      brandSelect.innerHTML = `<option value="ALL">すべてのブランド (${spinReels.length})</option>` +
+        brands.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+
+      if (prevBrand && (prevBrand === 'ALL' || brands.includes(prevBrand))) {
+        brandSelect.value = prevBrand;
+      }
+      updateSpinningModelDropdown();
+    }
+
+    function updateSpinningModelDropdown() {
+      const brandVal = document.getElementById('spin-brand-select').value;
+      const filtered = reelsDB.filter(r => r.type === 'spinning' && (brandVal === 'ALL' || r.brand === brandVal));
+      const modelSelect = document.getElementById('spin-model-select');
+
+      if (filtered.length === 0) {
+        modelSelect.innerHTML = '<option value="">スピニングリールデータがありません</option>';
+        renderSpinningDetail(null);
+        return;
+      }
+
+      modelSelect.innerHTML = filtered.map(r =>
+        `<option value="${escapeHtml(r.id)}"> ${escapeHtml(r.model)} ${r.gearRatio ? `[${r.gearRatio}]` : ''}</option>`
+      ).join('');
+
+      if (!filtered.some(r => r.id === selectedSpinId)) {
+        selectedSpinId = filtered[0].id;
+      }
+      modelSelect.value = selectedSpinId;
+      renderSpinningDetail(filtered.find(r => r.id === selectedSpinId) || filtered[0]);
+    }
+
+    function renderSpinningDetail(reel) {
+      const container = document.getElementById('spin-detail-container');
+      if (!reel) {
+        container.innerHTML = '<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">スピニングリールデータがありません。</div>';
+        return;
+      }
+
+      const maxWind = calcMaxWinding(reel);
+      const rowsHtml = SPIN_BEARING_SLOTS.map(slot => {
+        const bb = reel.bearings ? reel.bearings[slot.key] : null;
+        const spec = findBearingSpec(bb);
+        return `
+          <tr class="hover:bg-slate-850/70 transition-colors">
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
+                <div>
+                  <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
+                  <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">${escapeHtml(formatBBDim(bb))}</td>
+            <td class="py-3.5 px-4 font-mono text-xs">${spec ? `<span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '—'}</td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '—'}</td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '—'}</td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-300">${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '—'}</td>
+          </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+          <div class="pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
+              <span class="text-xs font-mono text-slate-500">SPINNING REEL</span>
+            </div>
+            <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
+              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-emerald-400">MAX WINDING</div>
+              <div class="text-lg font-mono font-bold text-emerald-300 mt-0.5">${maxWind !== '—' ? maxWind + ' cm' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">SPOOL DIA</div>
+              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.spoolDia ? reel.spoolDia + ' mm' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">SPOOL WEIGHT</div>
+              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.spoolWeightMain ? reel.spoolWeightMain + ' g' : '—'}</div>
+            </div>
+          </div>
+          ${reel.notes ? `<div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300"><span class="text-emerald-400 font-mono mr-2">NOTE:</span>${escapeHtml(reel.notes)}</div>` : ''}
+        </div>
+
+        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800">
+            <h4 class="text-xs sm:text-sm font-bold text-white">スピニング 部位別ベアリング適合一覧</h4>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                  <th class="py-3 px-4">部位コード / 名称</th>
+                  <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
+                  <th class="py-3 px-4">JIS呼び番号</th>
+                  <th class="py-3 px-4">NSK (開放 / ZZ)</th>
+                  <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
+                  <th class="py-3 px-4">NTN (開放 / ZZ)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/70">${rowsHtml}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    /**
+     * 14. ベアリング品番逆引き検索
+     */
+    function initBearingLookup() {
+      const innerSel = document.getElementById('bb-inner-select');
+      const outerSel = document.getElementById('bb-outer-select');
+      const widthSel = document.getElementById('bb-width-select');
+
+      const inners = [...new Set(BEARING_STANDARDS.map(b => b.d))].sort((a, b) => a - b);
+      const outers = [...new Set(BEARING_STANDARDS.map(b => b.D))].sort((a, b) => a - b);
+      const widths = [...new Set(BEARING_STANDARDS.map(b => b.B))].sort((a, b) => a - b);
+
+      innerSel.innerHTML += inners.map(v => `<option value="${v}">${v} mm</option>`).join('');
+      outerSel.innerHTML += outers.map(v => `<option value="${v}">${v} mm</option>`).join('');
+      widthSel.innerHTML += widths.map(v => `<option value="${v}">${v} mm</option>`).join('');
+
+      const filterBearings = () => {
+        const dVal = innerSel.value;
+        const DVal = outerSel.value;
+        const BVal = widthSel.value;
+        const codeKw = document.getElementById('bb-code-search').value.trim().toLowerCase();
+
+        const matches = BEARING_STANDARDS.filter(b => {
+          if (dVal && Number(b.d) !== Number(dVal)) return false;
+          if (DVal && Number(b.D) !== Number(DVal)) return false;
+          if (BVal && Number(b.B) !== Number(BVal)) return false;
+          if (codeKw) {
+            const hay = `${b.jis} ${b.nskOpen} ${b.nskZZ} ${b.nmbOpen} ${b.nmbZZ} ${b.ntnOpen} ${b.ntnZZ} ${b.note}`.toLowerCase();
+            if (!hay.includes(codeKw)) return false;
+          }
+          return true;
+        });
+
+        document.getElementById('bb-result-count').textContent = matches.length;
+        const tbody = document.getElementById('bb-table-body');
+        if (matches.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-500">一致するベアリング規格が見つかりませんでした</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = matches.map(b => `
+          <tr class="hover:bg-slate-850/70 transition-colors">
+            <td class="py-3 px-4 font-mono font-bold text-white whitespace-nowrap">${b.d} × ${b.D} × ${b.B} <span class="text-slate-500 font-normal">mm</span></td>
+            <td class="py-3 px-4 font-mono"><span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-semibold">${escapeHtml(b.jis)}</span></td>
+            <td class="py-3 px-4 font-mono text-slate-200 whitespace-nowrap">${escapeHtml(b.nskOpen)} / <span class="text-cyan-300">${escapeHtml(b.nskZZ)}</span></td>
+            <td class="py-3 px-4 font-mono text-slate-200 whitespace-nowrap">${escapeHtml(b.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(b.nmbZZ)}</span></td>
+            <td class="py-3 px-4 font-mono text-slate-300 whitespace-nowrap">${escapeHtml(b.ntnOpen)} / ${escapeHtml(b.ntnZZ)}</td>
+            <td class="py-3 px-4 text-xs text-slate-400">${escapeHtml(b.note)}</td>
+          </tr>`).join('');
+      };
+
+      [innerSel, outerSel, widthSel].forEach(el => el.addEventListener('change', filterBearings));
+      document.getElementById('bb-code-search').addEventListener('input', filterBearings);
+
+      document.getElementById('bb-reset-btn').addEventListener('click', () => {
+        innerSel.value = '';
+        outerSel.value = '';
+        widthSel.value = '';
+        document.getElementById('bb-code-search').value = '';
+        filterBearings();
+      });
+
+      document.querySelectorAll('.bb-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          innerSel.value = btn.getAttribute('data-d');
+          outerSel.value = btn.getAttribute('data-D');
+          widthSel.value = btn.getAttribute('data-B');
+          document.getElementById('bb-code-search').value = '';
+          filterBearings();
+        });
+      });
+
+      filterBearings();
+    }
+
+    /**
+     * 15. タブ切替 & 全ビュー再描画
+     */
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const active = btn.getAttribute('data-tab') === tabName;
+        btn.classList.toggle('active', active);
+        btn.classList.toggle('border-cyan-400', active);
+        btn.classList.toggle('text-cyan-400', active);
+        btn.classList.toggle('bg-slate-800/40', active);
+        btn.classList.toggle('font-semibold', active);
+        btn.classList.toggle('border-transparent', !active);
+        btn.classList.toggle('text-slate-400', !active);
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== `tab-${tabName}`);
+      });
+      if (tabName === 'sync') {
+        applySyncLockUI();
+      }
+    }
+
+    function refreshAllViews() {
+      updateHeaderStats();
+      populateBaitControls();
+      populateSpinningControls();
+      updateCompareUI();
+    }
+
+    /**
+     * 16. イベントリスナー初期化
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('gas-code-block').textContent = GAS_TEMPLATE_CODE;
+
+      const savedGasUrl = localStorage.getItem(GAS_URL_KEY);
+      if (savedGasUrl) {
+        document.getElementById('gas-url-input').value = savedGasUrl;
+      }
+
+      const savedFormUrl = localStorage.getItem(FORM_URL_KEY) || DEFAULT_FORM_URL;
+      document.getElementById('header-form-link').href = savedFormUrl;
+      document.getElementById('main-google-form-btn').href = savedFormUrl;
+      document.getElementById('custom-form-url-input').value = savedFormUrl;
+
+      isSyncUnlocked = false;
+      applySyncLockUI();
+
+      loadDatabase();
+      refreshAllViews();
+      initBearingLookup();
+
+      // パスコード解除フォーム
+      document.getElementById('sync-unlock-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const passInput = document.getElementById('sync-passcode-input');
+        const errEl = document.getElementById('sync-passcode-error');
+        if (passInput.value === SYNC_PASSCODE) {
+          isSyncUnlocked = true;
+          passInput.value = '';
+          errEl.classList.add('hidden');
+          applySyncLockUI();
+          showToast('スプレッドシート連携のロックを解除しました', 'success');
+        } else {
+          errEl.classList.remove('hidden');
+          showToast('パスコードが正しくありません', 'error');
+        }
+      });
+
+      // 再ロックボタン
+      document.getElementById('sync-lock-btn').addEventListener('click', () => {
+        isSyncUnlocked = false;
+        applySyncLockUI();
+        showToast('スプレッドシート連携をロックしました', 'info');
+      });
+
+      // タブ切替イベント
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      // ヘッダーのクイック同期ボタン
+      document.getElementById('header-quick-sync-btn').addEventListener('click', () => {
+        const url = localStorage.getItem(GAS_URL_KEY);
+        if (isSyncUnlocked && url) {
+          syncFromGasApi(url);
+        } else {
+          switchTab('sync');
+          if (!isSyncUnlocked) {
+            showToast('スプレッドシート連携タブのパスコードを入力してください', 'info');
+          } else {
+            showToast('GASウェブアプリURLを設定するか、.xlsx/.csvファイルをドロップしてください', 'info');
+          }
+        }
+      });
+
+      // ベイトフィルタ連動
+      document.getElementById('bait-brand-select').addEventListener('change', updateBaitModelDropdown);
+      document.getElementById('bait-model-select').addEventListener('change', (e) => {
+        selectedBaitId = e.target.value;
+        updateBaitModelDropdown();
+      });
+      document.getElementById('bait-keyword').addEventListener('input', updateBaitModelDropdown);
+      document.getElementById('bait-spool-filter').addEventListener('change', (e) => {
+        const val = e.target.value;
+        document.querySelectorAll('.spool-chip').forEach(chip => {
+          const active = chip.getAttribute('data-spool-chip') === val;
+          chip.classList.toggle('bg-cyan-500/20', active);
+          chip.classList.toggle('border-cyan-400', active);
+          chip.classList.toggle('text-cyan-300', active);
+          chip.classList.toggle('bg-slate-950', !active);
+          chip.classList.toggle('border-slate-800', !active);
+          chip.classList.toggle('text-slate-400', !active);
+        });
+        updateBaitModelDropdown();
+      });
+
+      document.querySelectorAll('.spool-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const val = chip.getAttribute('data-spool-chip');
+          const sel = document.getElementById('bait-spool-filter');
+          sel.value = val;
+          sel.dispatchEvent(new Event('change'));
+        });
+      });
+
+      document.getElementById('bait-bb-only-btn').addEventListener('click', (e) => {
+        onlyWithBearings = !onlyWithBearings;
+        const btn = e.currentTarget;
+        btn.classList.toggle('bg-emerald-500/20', onlyWithBearings);
+        btn.classList.toggle('border-emerald-400', onlyWithBearings);
+        btn.classList.toggle('text-emerald-200', onlyWithBearings);
+        btn.classList.toggle('bg-slate-950', !onlyWithBearings);
+        btn.classList.toggle('border-slate-800', !onlyWithBearings);
+        btn.classList.toggle('text-slate-400', !onlyWithBearings);
+        updateBaitModelDropdown();
+      });
+
+      document.getElementById('bait-reset-filter').addEventListener('click', () => {
+        document.getElementById('bait-brand-select').value = 'ALL';
+        document.getElementById('bait-keyword').value = '';
+        document.getElementById('bait-spool-filter').value = 'ALL';
+        onlyWithBearings = false;
+        document.querySelectorAll('.spool-chip').forEach(c => {
+          const isAll = c.getAttribute('data-spool-chip') === 'ALL';
+          c.classList.toggle('bg-cyan-500/20', isAll);
+          c.classList.toggle('border-cyan-400', isAll);
+          c.classList.toggle('text-cyan-300', isAll);
+          c.classList.toggle('bg-slate-950', !isAll);
+          c.classList.toggle('border-slate-800', !isAll);
+          c.classList.toggle('text-slate-400', !isAll);
+        });
+        updateBaitModelDropdown();
+      });
+
+      // 比較パネル開閉
+      document.getElementById('toggle-compare-panel-btn').addEventListener('click', () => {
+        if (compareIds.length === 0) {
+          showToast('先に機種詳細カードの「+ 比較リストに追加」を押してください', 'info');
+          return;
+        }
+        compareOpen = !compareOpen;
+        updateCompareUI();
+      });
+      document.getElementById('close-compare-btn').addEventListener('click', () => {
+        compareOpen = false;
+        updateCompareUI();
+      });
+      document.getElementById('clear-compare-btn').addEventListener('click', () => {
+        compareIds = [];
+        compareOpen = false;
+        updateCompareUI();
+        updateBaitModelDropdown();
+      });
+
+      // スピニング連動
+      document.getElementById('spin-brand-select').addEventListener('change', updateSpinningModelDropdown);
+      document.getElementById('spin-model-select').addEventListener('change', (e) => {
+        selectedSpinId = e.target.value;
+        updateSpinningModelDropdown();
+      });
+
+      // GASモーダル & 同期ボタン
+      document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        const m = document.getElementById('gas-modal');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      });
+      document.getElementById('close-gas-modal').addEventListener('click', () => {
+        const m = document.getElementById('gas-modal');
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      });
+      document.getElementById('copy-gas-code-btn').addEventListener('click', () => {
+        copyTextToClipboard(GAS_TEMPLATE_CODE, 'Code.gs をクリップボードにコピーしました');
+      });
+      document.getElementById('sync-gas-btn').addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        syncFromGasApi();
+      });
+
+      // GoogleフォームURLカスタマイズ
+      document.getElementById('edit-form-url-toggle').addEventListener('click', () => {
+        document.getElementById('form-url-editor').classList.toggle('hidden');
+      });
+      document.getElementById('save-form-url-btn').addEventListener('click', () => {
+        const val = document.getElementById('custom-form-url-input').value.trim();
+        if (!val) return;
+        localStorage.setItem(FORM_URL_KEY, val);
+        document.getElementById('header-form-link').href = val;
+        document.getElementById('main-google-form-btn').href = val;
+        showToast('投稿用GoogleフォームURLを保存しました', 'success');
+      });
+
+      // ファイルドラッグ＆ドロップインポート (.xlsx / .csv)
+      const dropZone = document.getElementById('file-drop-zone');
+      const fileInput = document.getElementById('spreadsheet-file-input');
+
+      dropZone.addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (!isSyncUnlocked) return;
+        if (e.target.files && e.target.files[0]) {
+          handleSpreadsheetFile(e.target.files[0]);
+          fileInput.value = '';
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach(evName => {
+        dropZone.addEventListener(evName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!isSyncUnlocked) return;
+          dropZone.classList.add('border-amber-400', 'bg-slate-900');
+        });
+      });
+      ['dragleave', 'drop'].forEach(evName => {
+        dropZone.addEventListener(evName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-amber-400', 'bg-slate-900');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (!isSyncUnlocked) return;
+        const files = e.dataTransfer?.files;
+        if (files && files[0]) {
+          handleSpreadsheetFile(files[0]);
+        }
+      });
+
+      // JSON / CSV バックアップ出力 & リセット
+      document.getElementById('export-json-btn').addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        const blob = new Blob([JSON.stringify(reelsDB, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `cdm_reel_db_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        showToast('JSONファイルを書き出しました', 'success');
+      });
+
+      document.getElementById('export-csv-btn').addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        const headers = ['type', 'brand', 'model', 'gearRatio', 'windingLength', 'spoolDia', 'spoolWidth', 'spoolWeightMain', 'spoolWeightSub', 'notes'];
+        const csvLines = [headers.join(',')].concat(
+          reelsDB.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))
+        );
+        const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `cdm_reel_db_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        showToast('CSVファイルを書き出しました', 'success');
+      });
+
+      document.getElementById('reset-db-btn').addEventListener('click', () => {
+        if (!isSyncUnlocked) return;
+        openConfirm('初期プリセットに戻す', '現在ブラウザに保存されている同期データを破棄し、初期プリセットデータに戻しますか？', () => {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(SYNC_META_KEY);
+          reelsDB = JSON.parse(JSON.stringify(INITIAL_REELS));
+          refreshAllViews();
+          showToast('初期プリセットデータにリセットしました', 'info');
+        });
+      });
+
+      // GAS URL設定済みの場合は起動時にバックグラウンド自動同期を試行
+      if (savedGasUrl) {
+        syncFromGasApi(savedGasUrl);
+      }
+    });
+  </script>
+</body>
+</html>
