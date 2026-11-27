@@ -82,7 +82,7 @@
             <li>エディタ内の既存コードをすべて消し、下の <code class="text-cyan-300">Code.gs</code> を貼り付けて保存します。</li>
             <li>右上の <strong>「デプロイ」＞「新しいデプロイ」</strong> をクリックし、種類で <strong>「ウェブアプリ」</strong> を選択します。</li>
             <li>「次のユーザーとして実行：<strong>自分</strong>」「アクセスできるユーザー：<strong>全員</strong>」にしてデプロイします（※スプレッドシート自体は非公開のままでDATAシートのみ読み取り専用JSONとして配信されます）。</li>
-            <li>発行された <strong>ウェブアプリURL（.../exec）</strong> をこの画面の入力欄に貼り付けて保存してください。</li>
+            <li>発行された <strong>ウェブアプリURL（.../exec）</strong> をサイトの共通設定に登録してください（通常の閲覧者による入力は不要です）。</li>
           </ol>
         </div>
 
@@ -1333,84 +1333,109 @@ function parseBB(outerVal, innerVal, widthVal) {
 
     /**
      * 10. GAS Web App JSON API 同期
+     * 共通URLから取得し、成功した場合だけローカルDBを更新する
      */
+    let gasSyncInProgress = false;
 
-/**
- * GAS Web App JSON API 同期
- */
-	async function syncFromGasApi(urlOverride = null, silent = false) {
-	  const inputEl = document.getElementById('gas-url-input');
-	  const rawUrl = (
-	    urlOverride ||
-	    DEFAULT_GAS_API_URL ||
-	    inputEl.value ||
-	    ''
-	  ).trim();
-	
-	  if (!rawUrl || !rawUrl.startsWith('https://script.google.com/')) {
-	    if (!silent) {
-	      showToast('有効なGAS URLを確認してください', 'error');
-	    }
-	    return;
-	  }
-	
-	  const headerIcon = document.getElementById('header-sync-icon');
-	  const btnSpinner = document.getElementById('gas-btn-spinner');
-	
-	  if (headerIcon) headerIcon.classList.add('animate-spin');
-	  if (btnSpinner) btnSpinner.classList.add('animate-spin');
-	
-	  try {
-	    const res = await fetch(rawUrl, {
-	      method: 'GET',
-	      redirect: 'follow',
-	      cache: 'no-store'
-	    });
-	
-	    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-	
-	    const data = await res.json();
-	
-	    if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
-	      throw new Error('有効なreels配列がありません');
-	    }
-	
-	    // 正常取得できた場合のみデータを更新
-	    reelsDB = data.reels;
-	
-	    localStorage.setItem(GAS_URL_KEY, rawUrl);
-	    if (inputEl) inputEl.value = rawUrl;
-	
-	    saveDatabase('GAS 自動同期');
-	    refreshAllViews();
-	
-	    if (!silent) {
-	      showToast(
-	        `スプレッドシートと同期完了（全 ${reelsDB.length} 機種）`,
-	        'success'
-	      );
-	    }
-	
-	  } catch (err) {
-	    console.error('GAS同期エラー:', err);
-	
-	    if (!silent) {
-	      showToast(
-	        '同期失敗：保存済みデータで表示を継続します',
-	        'error'
-	      );
-	    }
-	
-	  } finally {
-	    if (headerIcon) headerIcon.classList.remove('animate-spin');
-	    if (btnSpinner) btnSpinner.classList.remove('animate-spin');
-	  }
-	}
+    async function syncFromGasApi(urlOverride = null, silent = false) {
+      // 通常運用は全ユーザー共通URL。urlOverrideは管理者による明示指定用。
+      const rawUrl = String(urlOverride || DEFAULT_GAS_API_URL || '').trim();
+
+      if (!rawUrl || !rawUrl.startsWith('https://script.google.com/')) {
+        if (!silent) showToast('有効なGAS URLを確認してください', 'error');
+        return false;
+      }
+
+      // 5分間隔の自動同期と手動同期が重なっても多重実行しない
+      if (gasSyncInProgress) return false;
+      gasSyncInProgress = true;
+
+      const headerIcon = document.getElementById('header-sync-icon');
+      const btnSpinner = document.getElementById('gas-btn-spinner');
+
+      if (headerIcon) headerIcon.classList.add('animate-spin');
+      if (btnSpinner) btnSpinner.classList.add('animate-spin');
+
+      try {
+        const res = await fetch(rawUrl, {
+          method: 'GET',
+          redirect: 'follow',
+          cache: 'no-store'
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
+          throw new Error('JSON内に有効なreels配列がありません');
+        }
+
+        // データ内容を確認してから置き換える（失敗時は既存DBを保持）
+        const receivedReels = data.reels.filter(
+          reel => reel && typeof reel === 'object' && reel.id && reel.type && reel.brand && reel.model
+        );
+
+        if (receivedReels.length === 0) {
+          throw new Error('有効なリールデータがありません');
+        }
+
+        reelsDB = receivedReels;
+        localStorage.setItem(GAS_URL_KEY, DEFAULT_GAS_API_URL);
+        if (document.getElementById('gas-url-input')) {
+          document.getElementById('gas-url-input').value = DEFAULT_GAS_API_URL;
+        }
+
+        saveDatabase('GAS 自動同期');
+        refreshAllViews();
+
+        const syncInfo = document.getElementById('gas-last-sync-info');
+        if (syncInfo) {
+          syncInfo.textContent = `同期ステータス: 成功（${new Date().toLocaleString('ja-JP')} / ${reelsDB.length}機種）`;
+        }
+
+        if (!silent) {
+          showToast(`スプレッドシートと同期完了（全 ${reelsDB.length} 機種）`, 'success');
+        }
+        return true;
+
+      } catch (err) {
+        console.error('GAS同期エラー:', err);
+
+        const syncInfo = document.getElementById('gas-last-sync-info');
+        if (syncInfo) {
+          syncInfo.textContent = `同期ステータス: 失敗（保存済みデータを使用）`;
+        }
+
+        if (!silent) {
+          showToast('同期失敗：保存済みデータで表示を継続します', 'error');
+        }
+        return false;
+
+      } finally {
+        gasSyncInProgress = false;
+        if (headerIcon) headerIcon.classList.remove('animate-spin');
+        if (btnSpinner) btnSpinner.classList.remove('animate-spin');
+      }
+    }
 
 
     /**
      * 11. ベイトリール検索 & 詳細描画
      */
+    // MODEL名を数字も考慮して自然順（1, 2, 10）で比較
+    const modelNameCollator = new Intl.Collator('ja', {
+      numeric: true,
+      sensitivity: 'base'
+    });
+
+    function compareModelNames(a, b) {
+      return modelNameCollator.compare(
+        String(a?.model ?? ''),
+        String(b?.model ?? '')
+      );
+    }
+
     function getFilteredBaitReels() {
       const brandVal = document.getElementById('bait-brand-select').value;
       const kw = document.getElementById('bait-keyword').value.trim().toLowerCase();
@@ -1456,12 +1481,7 @@ function parseBB(outerVal, innerVal, widthVal) {
 
 
 		function updateBaitModelDropdown() {
-		  const filtered = getFilteredBaitReels().sort((a, b) =>
-  a.model.localeCompare(b.model, 'en', {
-    numeric: true,
-    sensitivity: 'base'
-  })
-);
+		  const filtered = getFilteredBaitReels().sort(compareModelNames);
 		  const modelSelect = document.getElementById('bait-model-select');
 		  const pillsContainer = document.getElementById('bait-quick-pills');
 		  document.getElementById('bait-match-count').textContent = filtered.length;
@@ -1757,12 +1777,7 @@ function parseBB(outerVal, innerVal, widthVal) {
 		 const filtered = reelsDB.filter(r =>
   r.type === 'spinning' &&
   (brandVal === 'ALL' || r.brand === brandVal)
-).sort((a, b) =>
-  a.model.localeCompare(b.model, 'en', {
-    numeric: true,
-    sensitivity: 'base'
-  })
-);
+).sort(compareModelNames);
 		  const modelSelect = document.getElementById('spin-model-select');
 
 		  if (filtered.length === 0) {
@@ -1982,14 +1997,13 @@ function parseBB(outerVal, innerVal, widthVal) {
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('gas-code-block').textContent = GAS_TEMPLATE_CODE;
 
-	// 全ユーザー共通のGAS URL
-	const DEFAULT_GAS_API_URL =
-	  'https://script.google.com/macros/s/AKfycbxVPGJfRM6uGOonLdPJ9o14HTVo8EzS73gaU_KRzD80QFmUhPeMdOpz4gq9vHIiqolD/exec';
-	
-	// GAS URLを共通設定に統一
-	document.getElementById('gas-url-input').value = DEFAULT_GAS_API_URL;
-	localStorage.setItem(GAS_URL_KEY, DEFAULT_GAS_API_URL);
+      // 全ユーザー共通のGAS URLを表示・保存
+      const gasInput = document.getElementById('gas-url-input');
+      if (gasInput) {
+        gasInput.value = DEFAULT_GAS_API_URL;
+        gasInput.readOnly = true;
       }
+      localStorage.setItem(GAS_URL_KEY, DEFAULT_GAS_API_URL);
 
       const savedFormUrl = localStorage.getItem(FORM_URL_KEY) || DEFAULT_FORM_URL;
       document.getElementById('header-form-link').href = savedFormUrl;
@@ -2241,10 +2255,13 @@ function parseBB(outerVal, innerVal, widthVal) {
         });
       });
 
-      // GAS URL設定済みの場合は起動時にバックグラウンド自動同期を試行
-      if (savedGasUrl) {
-        syncFromGasApi(savedGasUrl);
-      }
+      // 初期DB・画面・イベントの準備後に最新データをバックグラウンド取得
+      syncFromGasApi(DEFAULT_GAS_API_URL, true);
+
+      // ページを開いている間、5分ごとに最新データへ更新
+      window.setInterval(() => {
+        syncFromGasApi(DEFAULT_GAS_API_URL, true);
+      }, 5 * 60 * 1000);
     });
   </script>
 </body>
