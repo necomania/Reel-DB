@@ -1906,100 +1906,100 @@ function updateSpinningModelDropdown() {
 
   // 未選択なら詳細を表示しない
   const currentReel = filtered.find(r => r.id === selectedSpinId) || null;
-  renderSpinningDetail(currentReel);
+  
+function renderSpinningDetail(reel) {
+  const container = document.getElementById('spin-detail-container');
 
-  // 候補機種のクリックイベント
-  pillsContainer.querySelectorAll('[data-select-spin]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectedSpinId = btn.getAttribute('data-select-spin');
-      modelSelect.value = selectedSpinId;
-      updateSpinningModelDropdown();
-    });
-  });
-}
+  if (!reel) {
+    container.innerHTML = '<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">スピニングリールデータがありません。</div>';
+    return;
+  }
 
+  const rowsHtml = SPIN_BEARING_SLOTS.map(slot => {
+    const bb = reel.bearings ? reel.bearings[slot.key] : null;
+    const spec = findBearingSpec(bb);
 
-    function renderSpinningDetail(reel) {
-      const container = document.getElementById('spin-detail-container');
-      if (!reel) {
-        container.innerHTML = '<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">スピニングリールデータがありません。</div>';
-        return;
-      }
-
-      const maxWind = calcMaxWinding(reel);
-      const rowsHtml = SPIN_BEARING_SLOTS.map(slot => {
-        const bb = reel.bearings ? reel.bearings[slot.key] : null;
-        const spec = findBearingSpec(bb);
-        return `
-          <tr class="hover:bg-slate-850/70 transition-colors">
-            <td class="py-3.5 px-4">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
-                <div>
-                  <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
-                  <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
-                </div>
-              </div>
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">${escapeHtml(formatBBDim(bb))}</td>
-            <td class="py-3.5 px-4 font-mono text-xs">${spec ? `<span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '—'}</td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '—'}</td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '—'}</td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-300">${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '—'}</td>
-          </tr>`;
-      }).join('');
-
-      container.innerHTML = `
-        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-          <div class="pb-4 border-b border-slate-800">
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
-              <span class="text-xs font-mono text-slate-500">SPINNING REEL</span>
-            </div>
-            <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
-              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-emerald-400">MAX WINDING</div>
-              <div class="text-lg font-mono font-bold text-emerald-300 mt-0.5">${maxWind !== '—' ? maxWind + ' cm' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">SPOOL DIA</div>
-              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.spoolDia ? reel.spoolDia + ' mm' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">SPOOL WEIGHT</div>
-              <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.spoolWeightMain ? reel.spoolWeightMain + ' g' : '—'}</div>
+    return `
+      <tr class="hover:bg-slate-850/70 transition-colors">
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
+            <div>
+              <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
+              <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
             </div>
           </div>
-          ${reel.notes ? `<div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300"><span class="text-emerald-400 font-mono mr-2">NOTE:</span>${escapeHtml(reel.notes)}</div>` : ''}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">${escapeHtml(formatBBDim(bb))}</td>
+        <td class="py-3.5 px-4 font-mono text-xs">${spec ? `<span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '—'}</td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '—'}</td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-200">${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '—'}</td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-300">${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+
+      <!-- 機種情報 -->
+      <div class="pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
+          <span class="text-xs font-mono text-slate-500">SPINNING REEL</span>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
+      </div>
+
+      <!-- 基本スペック -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">SPOOL SIZE</div>
+          <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.spoolSize ? escapeHtml(reel.spoolSize) : '—'}</div>
         </div>
 
-        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800">
-            <h4 class="text-xs sm:text-sm font-bold text-white">スピニング 部位別ベアリング適合一覧</h4>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                  <th class="py-3 px-4">部位コード / 名称</th>
-                  <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
-                  <th class="py-3 px-4">JIS呼び番号</th>
-                  <th class="py-3 px-4">NSK (開放 / ZZ)</th>
-                  <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
-                  <th class="py-3 px-4">NTN (開放 / ZZ)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/70">${rowsHtml}</tbody>
-            </table>
-          </div>
-        </div>`;
-    }
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
+          <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
+        </div>
+
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">REEL WEIGHT</div>
+          <div class="text-lg font-mono font-bold text-white mt-0.5">${reel.reelWeight != null && reel.reelWeight !== '' ? escapeHtml(reel.reelWeight) + ' g' : '—'}</div>
+        </div>
+
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">LINE CAPACITY</div>
+          <div class="text-sm font-mono font-bold text-yellow-300 mt-1 break-words">${reel.lineCapacity ? escapeHtml(reel.lineCapacity) : '—'}</div>
+        </div>
+
+      </div>
+
+      ${reel.notes ? `<div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300"><span class="text-emerald-400 font-mono mr-2">NOTE:</span>${escapeHtml(reel.notes)}</div>` : ''}
+    </div>
+
+    <!-- ベアリング適合一覧 -->
+    <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800">
+        <h4 class="text-xs sm:text-sm font-bold text-white">スピニング 部位別ベアリング適合一覧</h4>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              <th class="py-3 px-4">部位コード / 名称</th>
+              <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
+              <th class="py-3 px-4">JIS呼び番号</th>
+              <th class="py-3 px-4">NSK (開放 / ZZ)</th>
+              <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
+              <th class="py-3 px-4">NTN (開放 / ZZ)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/70">${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
 
     /**
      * 14. ベアリング品番逆引き検索
