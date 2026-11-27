@@ -1419,45 +1419,53 @@ function parseBB(outerVal, innerVal, widthVal) {
       updateBaitModelDropdown();
     }
 
-    function updateBaitModelDropdown() {
-      const filtered = getFilteredBaitReels();
-      const modelSelect = document.getElementById('bait-model-select');
-      const pillsContainer = document.getElementById('bait-quick-pills');
-      document.getElementById('bait-match-count').textContent = filtered.length;
 
-      if (filtered.length === 0) {
-        modelSelect.innerHTML = '<option value="">条件に一致する機種がありません</option>';
-        pillsContainer.innerHTML = '<span class="text-xs text-slate-500">該当なし</span>';
-        renderBaitDetail(null);
-        return;
-      }
+		function updateBaitModelDropdown() {
+		  const filtered = getFilteredBaitReels();
+		  const modelSelect = document.getElementById('bait-model-select');
+		  const pillsContainer = document.getElementById('bait-quick-pills');
+		  document.getElementById('bait-match-count').textContent = filtered.length;
 
-		modelSelect.innerHTML = filtered.map(r => {
-		  return `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`;
-		}).join('');
+		  if (filtered.length === 0) {
+		    modelSelect.innerHTML = '<option value="">条件に一致する機種がありません</option>';
+		    pillsContainer.innerHTML = '<span class="text-xs text-slate-500">該当なし</span>';
+		    renderBaitDetail(null);
+		    return;
+		  }
 
-      if (!filtered.some(r => r.id === selectedBaitId)) {
-        selectedBaitId = filtered[0].id;
-      }
-      modelSelect.value = selectedBaitId;
+		  // 機種名の先頭に「選択しない」を追加
+		  modelSelect.innerHTML =
+		    '<option value="">選択しない</option>' +
+		    filtered.map(r => {
+		      return `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`;
+		    }).join('');
 
-	pillsContainer.innerHTML = filtered.slice(0, 30).map(r => {
-	  const active = r.id === selectedBaitId;
-	  const hasBB = hasAnyBearingData(r);
+		  // 初期状態は機種未選択
+		  if (!filtered.some(r => r.id === selectedBaitId)) {
+		    selectedBaitId = '';
+		  }
+		  modelSelect.value = selectedBaitId;
 
-	  return `<button type="button" data-select-bait="${escapeHtml(r.id)}" class="px-2.5 py-1 rounded-lg text-xs whitespace-nowrap border transition-all flex items-center gap-1.5 ${
-	    active
-	      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold'
-	      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-	  }">
-	    ${hasBB ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>' : ''}
-	    <span>${escapeHtml(r.model)}</span>
-	  </button>`;
-	}).join('');
+		  // クイック選択ボタン
+		  pillsContainer.innerHTML = filtered.slice(0, 30).map(r => {
+		    const active = r.id === selectedBaitId;
+		    const hasBB = hasAnyBearingData(r);
 
-      const currentReel = filtered.find(r => r.id === selectedBaitId) || filtered[0];
-      renderBaitDetail(currentReel);
-    }
+		    return `<button type="button" data-select-bait="${escapeHtml(r.id)}" class="px-2.5 py-1 rounded-lg text-xs whitespace-nowrap border transition-all flex items-center gap-1.5 ${
+		      active
+		        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold'
+		        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+		    }">
+		      ${hasBB ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>' : ''}
+		      <span>${escapeHtml(r.model)}</span>
+		    </button>`;
+		  }).join('');
+
+		  // 未選択なら詳細を表示しない
+		  const currentReel = filtered.find(r => r.id === selectedBaitId) || null;
+		  renderBaitDetail(currentReel);
+		}
+
 
     function renderBaitDetail(reel) {
       const container = document.getElementById('bait-detail-container');
@@ -1703,26 +1711,39 @@ function parseBB(outerVal, innerVal, widthVal) {
       updateSpinningModelDropdown();
     }
 
-    function updateSpinningModelDropdown() {
-      const brandVal = document.getElementById('spin-brand-select').value;
-      const filtered = reelsDB.filter(r => r.type === 'spinning' && (brandVal === 'ALL' || r.brand === brandVal));
-      const modelSelect = document.getElementById('spin-model-select');
 
-      if (filtered.length === 0) {
-        modelSelect.innerHTML = '<option value="">スピニングリールデータがありません</option>';
-        renderSpinningDetail(null);
-        return;
-      }
+		function updateSpinningModelDropdown() {
+		  const brandVal = document.getElementById('spin-brand-select').value;
+		  const filtered = reelsDB.filter(r =>
+		    r.type === 'spinning' &&
+		    (brandVal === 'ALL' || r.brand === brandVal)
+		  );
+		  const modelSelect = document.getElementById('spin-model-select');
 
-	modelSelect.innerHTML = filtered.map(r =>
-	  `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`
-	).join('');
-      if (!filtered.some(r => r.id === selectedSpinId)) {
-        selectedSpinId = filtered[0].id;
-      }
-      modelSelect.value = selectedSpinId;
-      renderSpinningDetail(filtered.find(r => r.id === selectedSpinId) || filtered[0]);
-    }
+		  if (filtered.length === 0) {
+		    modelSelect.innerHTML = '<option value="">スピニングリールデータがありません</option>';
+		    renderSpinningDetail(null);
+		    return;
+		  }
+
+		  // 機種名の先頭に「選択しない」を追加
+		  modelSelect.innerHTML =
+		    '<option value="">選択しない</option>' +
+		    filtered.map(r =>
+		      `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`
+		    ).join('');
+
+		  // 初期状態は機種未選択
+		  if (!filtered.some(r => r.id === selectedSpinId)) {
+		    selectedSpinId = '';
+		  }
+
+		  modelSelect.value = selectedSpinId;
+
+		  // 未選択なら詳細を表示しない
+		  const currentReel = filtered.find(r => r.id === selectedSpinId) || null;
+		  renderSpinningDetail(currentReel);
+		}
 
     function renderSpinningDetail(reel) {
       const container = document.getElementById('spin-detail-container');
