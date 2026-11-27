@@ -1006,7 +1006,9 @@ function parseBB(outerVal, innerVal, widthVal) {
     const SYNC_META_KEY = 'cdm_reel_sync_meta';
     const FORM_URL_KEY = 'cdm_reel_google_form_url';
     const DEFAULT_FORM_URL = 'https://forms.gle/3mxGXzVExjvmWM3PA';
+    const DEFAULT_GAS_API_URL ='https://script.google.com/macros/s/AKfycbxVPGJfRM6uGOonLdPJ9o14HTVo8EzS73gaU_KRzD80QFmUhPeMdOpz4gq9vHIiqolD/exec';
 
+	  
     let reelsDB = [];
     let selectedBaitId = '';
     let selectedSpinId = '';
@@ -1947,9 +1949,13 @@ function parseBB(outerVal, innerVal, widthVal) {
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('gas-code-block').textContent = GAS_TEMPLATE_CODE;
 
-      const savedGasUrl = localStorage.getItem(GAS_URL_KEY);
-      if (savedGasUrl) {
-        document.getElementById('gas-url-input').value = savedGasUrl;
+	// 全ユーザー共通のGAS URL
+	const DEFAULT_GAS_API_URL =
+	  'https://script.google.com/macros/s/AKfycbxVPGJfRM6uGOonLdPJ9o14HTVo8EzS73gaU_KRzD80QFmUhPeMdOpz4gq9vHIiqolD/exec';
+	
+	// GAS URLを共通設定に統一
+	document.getElementById('gas-url-input').value = DEFAULT_GAS_API_URL;
+	localStorage.setItem(GAS_URL_KEY, DEFAULT_GAS_API_URL);
       }
 
       const savedFormUrl = localStorage.getItem(FORM_URL_KEY) || DEFAULT_FORM_URL;
