@@ -1692,7 +1692,7 @@ function parseBB(outerVal, innerVal, widthVal) {
 		}
 
 
-    function renderBaitDetail(reel) {
+function renderBaitDetail(reel) {
       const container = document.getElementById('bait-detail-container');
       if (!reel) {
         container.innerHTML = `
@@ -1704,6 +1704,32 @@ function parseBB(outerVal, innerVal, widthVal) {
 
       const maxWind = calcMaxWinding(reel);
       const isCompared = compareIds.includes(reel.id);
+
+      // 画像の下に表示する NOTE（DATA(ベイト) のベアリング直前に追加した Q列 = reel.note）
+      const baitNoteHtml = reel.note
+        ? `
+          <div class="bg-slate-950/85 border border-cyan-500/30 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
+            <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
+            <span class="whitespace-pre-line leading-relaxed">${escapeHtml(reel.note)}</span>
+          </div>`
+        : '';
+
+      // リール画像がある場合のみ描画（画像プロパティ名に合わせて調整可能）
+      const reelImageUrl = reel.image || reel.imageUrl || '';
+      const imageAndNoteSectionHtml = reelImageUrl
+        ? `
+          <div class="space-y-3">
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-3 flex items-center justify-center">
+              <img
+                src="${escapeHtml(reelImageUrl)}"
+                alt="${escapeHtml(reel.brand)} ${escapeHtml(reel.model)}"
+                class="max-h-64 w-auto object-contain rounded-lg"
+                loading="lazy"
+              />
+            </div>
+            ${baitNoteHtml}
+          </div>`
+        : (baitNoteHtml ? `<div class="space-y-3">${baitNoteHtml}</div>` : '');
 
       const bearingRowsHtml = BAIT_BEARING_SLOTS.map(slot => {
         const bb = reel.bearings ? reel.bearings[slot.key] : null;
@@ -1762,6 +1788,8 @@ function parseBB(outerVal, innerVal, widthVal) {
               </button>
             </div>
           </div>
+
+          ${imageAndNoteSectionHtml}
 
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
@@ -1855,6 +1883,7 @@ function parseBB(outerVal, innerVal, widthVal) {
           `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
           `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`
         ];
+        if (reel.note) lines.push(`NOTE: ${reel.note}`);
         BAIT_BEARING_SLOTS.forEach(s => {
           const bb = reel.bearings?.[s.key];
           if (bb && (bb.outer || bb.inner || bb.width)) {
@@ -2094,6 +2123,17 @@ function renderSpinningDetail(reel) {
       : '—';
   };
 
+  // 糸巻き量の後に表示する備考NOTE（L列 = reel.note、既存 AE列 = reel.notes もフォールバック/併記対応）
+  const spinNoteText = reel.note || reel.notes || '';
+  const spinNoteHtml = spinNoteText
+    ? `
+      <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
+        <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
+        <span class="whitespace-pre-line leading-relaxed">${escapeHtml(spinNoteText)}</span>
+      </div>
+    `
+    : '';
+
   container.innerHTML = `
     <!-- 機種基本情報 -->
     <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
@@ -2111,8 +2151,8 @@ function renderSpinningDetail(reel) {
         </h3>
       </div>
 
-      <!-- 基本スペック6項目 -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <!-- 基本スペック7項目（REEL WEIGHT の直前に FIXED HANDLE を配置） -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
 
         <!-- Spool Size -->
         <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
@@ -2146,16 +2186,24 @@ function renderSpinningDetail(reel) {
           </div>
         </div>
 
+        <!-- Fixed Handle（REEL WEIGHT の前） -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-cyan-400">FIXED HANDLE</div>
+          <div class="text-lg font-mono font-bold text-cyan-300 mt-0.5">
+            ${showValue(reel.fixedHandle)}
+          </div>
+        </div>
+
         <!-- Reel Weight -->
         <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-slate-400">REEL WEIGHT</div>
-          <div class="text-lg font-mono font-bold text-white mt-0.5">
+          <div class="text-[11px] font-mono text-pink-400">REEL WEIGHT</div>
+          <div class="text-lg font-mono font-bold text-pink-400 mt-0.5">
             ${showValue(reel.reelWeight, ' g')}
           </div>
         </div>
 
         <!-- Line Capacity -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 sm:col-span-2 lg:col-span-2">
           <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY</div>
           <div class="text-sm font-mono font-bold text-yellow-300 mt-1 break-words">
             ${showValue(reel.lineCapacity)}
@@ -2164,12 +2212,8 @@ function renderSpinningDetail(reel) {
 
       </div>
 
-      ${reel.notes ? `
-        <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300">
-          <span class="text-emerald-400 font-mono mr-2">NOTE:</span>
-          ${escapeHtml(reel.notes)}
-        </div>
-      ` : ''}
+      <!-- 糸巻き量（LINE CAPACITY）の後に配置した備考 NOTE -->
+      ${spinNoteHtml}
 
     </div>
 
