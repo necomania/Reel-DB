@@ -499,7 +499,7 @@
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white">Google Apps Script (GAS) ウェブアプリ連携</h3>
               <p class="text-xs text-slate-400 leading-relaxed">
-                スプレッドシートの共有設定を<strong>「制限付き（非公開）」</strong>のまま維持しつつ、<code class="text-slate-200">DATA(ベイト)</code>（B〜AH列・5行目以降）と <code class="text-slate-200">DATA(スピニング)</code>（B〜Y列・5行目以降）の整形済みデータだけをJSONとして取得します。
+                スプレッドシートの共有設定を<strong>「制限付き（非公開）」</strong>のまま維持しつつ、<code class="text-slate-200">DATA(ベイト)</code>（B〜AO列・5行目以降）と <code class="text-slate-200">DATA(スピニング)</code>（B〜Y列・5行目以降）の整形済みデータだけをJSONとして取得します。
               </p>
 
               <div class="pt-2 space-y-2">
@@ -570,10 +570,10 @@
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
               <div class="font-bold text-cyan-400 flex items-center justify-between">
                 <span>シート名: DATA(ベイト)</span>
-                <span class="font-mono text-[11px] text-slate-500">B〜AH列 / 5行目以降</span>
+                <span class="font-mono text-[11px] text-slate-500">C〜AO列 / 5行目以降</span>
               </div>
               <p class="text-slate-400 leading-relaxed">
-                <span class="text-slate-200 font-mono">B:</span> Brand / <span class="text-slate-200 font-mono">C:</span> Model / <span class="text-slate-200 font-mono">D:</span> ギア比 / <span class="text-slate-200 font-mono">E:</span> 巻上長 / <span class="text-slate-200 font-mono">F-G:</span> スプール径・幅 / <span class="text-slate-200 font-mono">H-I:</span> スプール重量(Main/Sub) / <span class="text-slate-200 font-mono">J-AG:</span> 8部位ベアリング(外×内×幅) / <span class="text-slate-200 font-mono">AH:</span> 備考
+                <span class="text-slate-200 font-mono">C:</span> Brand / <span class="text-slate-200 font-mono">D:</span> Model / <span class="text-slate-200 font-mono">E-J:</span> 基本スペック / <span class="text-slate-200 font-mono">K:</span> Brake Type / <span class="text-slate-200 font-mono">L:</span> Reel Weight / <span class="text-slate-200 font-mono">M:</span> Cast Weight / <span class="text-slate-200 font-mono">N-P:</span> Line Capacity 1〜3 / <span class="text-slate-200 font-mono">Q-AN:</span> 8部位ベアリング(外×内×幅) / <span class="text-slate-200 font-mono">AO:</span> 備考
               </p>
             </div>
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
@@ -611,7 +611,7 @@
     const SYNC_PASSCODE = 'tom5615001';
 
     /**
-     * 1. GAS Code.gs テンプレート (DATA(ベイト) B..AH列・5行目以降 / DATA(スピニング) B..Y列・5行目以降)
+     * 1. GAS Code.gs テンプレート (DATA(ベイト) C..AO列・5行目以降 / DATA(スピニング) B..Y列・5行目以降)
      */
     const GAS_TEMPLATE_CODE = `/**
  * 中華リールスペック表(仮) 非公開スプレッドシート連携API (Code.gs)
@@ -624,13 +624,13 @@ function doGet(e) {
 
   const reels = [];
 
-  // 1. DATA(ベイト): B列(2)〜AH列(34), 5行目以降
+  // 1. DATA(ベイト): B列(2)〜AO列(41), 5行目以降（C列=Brand, D列=Model）
   if (baitSheet && baitSheet.getLastRow() >= 5) {
     const numRows = baitSheet.getLastRow() - 4;
-    const values = baitSheet.getRange(5, 2, numRows, 33).getValues(); // B=2 .. AH=34 (33列)
+    const values = baitSheet.getRange(5, 2, numRows, 40).getValues(); // B=2 .. AO=41 (40列)
     values.forEach((row, idx) => {
-      const brand = String(row[0] || '').trim();
-      const model = String(row[1] || '').trim();
+      const brand = String(row[1] || '').trim();
+      const model = String(row[2] || '').trim();
       if (!brand && !model) return;
 
       reels.push({
@@ -638,23 +638,29 @@ function doGet(e) {
         type: 'bait',
         brand: brand || '不明',
         model: model || '名称未設定',
-        gearRatio: parseNum(row[2]),
-        windingLength: parseNum(row[3]),
-        spoolDia: parseNum(row[4]),
-        spoolWidth: parseNum(row[5]),
-        spoolWeightMain: parseNum(row[6]),
-        spoolWeightSub: parseNum(row[7]),
+        gearRatio: parseNum(row[3]),
+        windingLength: parseNum(row[4]),
+        spoolDia: parseNum(row[5]),
+        spoolWidth: parseNum(row[6]),
+        spoolWeightMain: parseNum(row[7]),
+        spoolWeightSub: parseNum(row[8]),
+        brakeType: String(row[9] || '').trim(), // K列
+        reelWeight: parseNum(row[10]), // L列
+        castWeight: parseNum(row[11]), // M列
+        lineCapacity1: String(row[12] || '').trim(), // N列
+        lineCapacity2: String(row[13] || '').trim(), // O列
+        lineCapacity3: String(row[14] || '').trim(), // P列
         bearings: {
-          spool:       parseBB(row[8],  row[9],  row[10]), // J,K,L
-          sideCover:   parseBB(row[11], row[12], row[13]), // M,N,O
-          pinionOuter: parseBB(row[14], row[15], row[16]), // P,Q,R
-          clutchCam:   parseBB(row[17], row[18], row[19]), // S,T,U
-          handle:      parseBB(row[20], row[21], row[22]), // V,W,X
-          gearShaft:   parseBB(row[23], row[24], row[25]), // Y,Z,AA
-          wormGear:    parseBB(row[26], row[27], row[28]), // AB,AC,AD
-          wormCover:   parseBB(row[29], row[30], row[31])  // AE,AF,AG
+          spool:       parseBB(row[15], row[16], row[17]), // Q,R,S
+          sideCover:   parseBB(row[18], row[19], row[20]), // T,U,V
+          pinionOuter: parseBB(row[21], row[22], row[23]), // W,X,Y
+          clutchCam:   parseBB(row[24], row[25], row[26]), // Z,AA,AB
+          handle:      parseBB(row[27], row[28], row[29]), // AC,AD,AE
+          gearShaft:   parseBB(row[30], row[31], row[32]), // AF,AG,AH
+          wormGear:    parseBB(row[33], row[34], row[35]), // AI,AJ,AK
+          wormCover:   parseBB(row[36], row[37], row[38])  // AL,AM,AN
         },
-        notes: String(row[32] || '').trim() // AH列
+        notes: String(row[39] || '').trim() // AO列
       });
     });
   }
@@ -1224,17 +1230,23 @@ function parseBB(outerVal, innerVal, widthVal) {
           spoolWidth: parseNum(row[6]),
           spoolWeightMain: parseNum(row[7]),
           spoolWeightSub: parseNum(row[8]),
+          brakeType: String(row[9] ?? '').trim(),
+          reelWeight: parseNum(row[10]),
+          castWeight: parseNum(row[11]),
+          lineCapacity1: String(row[12] ?? '').trim(),
+          lineCapacity2: String(row[13] ?? '').trim(),
+          lineCapacity3: String(row[14] ?? '').trim(),
           bearings: {
-            spool:       parseBB(row[9],  row[10], row[11]),
-            sideCover:   parseBB(row[12], row[13], row[14]),
-            pinionOuter: parseBB(row[15], row[16], row[17]),
-            clutchCam:   parseBB(row[18], row[19], row[20]),
-            handle:      parseBB(row[21], row[22], row[23]),
-            gearShaft:   parseBB(row[24], row[25], row[26]),
-            wormGear:    parseBB(row[27], row[28], row[29]),
-            wormCover:   parseBB(row[30], row[31], row[32])
+            spool:       parseBB(row[15], row[16], row[17]),
+            sideCover:   parseBB(row[18], row[19], row[20]),
+            pinionOuter: parseBB(row[21], row[22], row[23]),
+            clutchCam:   parseBB(row[24], row[25], row[26]),
+            handle:      parseBB(row[27], row[28], row[29]),
+            gearShaft:   parseBB(row[30], row[31], row[32]),
+            wormGear:    parseBB(row[33], row[34], row[35]),
+            wormCover:   parseBB(row[36], row[37], row[38])
           },
-          notes: String(row[33] ?? '').trim()
+          notes: String(row[39] ?? '').trim()
         });
       }
       return result;
@@ -1625,6 +1637,33 @@ function parseBB(outerVal, innerVal, widthVal) {
             </div>
           </div>
 
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-violet-400">BRAKE TYPE</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5">${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">REEL WEIGHT</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.reelWeight != null ? reel.reelWeight + ' g' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-cyan-400">CAST WEIGHT</div>
+              <div class="text-lg sm:text-xl font-mono font-bold text-cyan-300 mt-0.5 tabular-nums">${reel.castWeight != null ? reel.castWeight + ' g' : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">LINE CAPACITY 1</div>
+              <div class="text-base sm:text-lg font-mono font-bold text-white mt-0.5">${reel.lineCapacity1 ? escapeHtml(reel.lineCapacity1) : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">LINE CAPACITY 2</div>
+              <div class="text-base sm:text-lg font-mono font-bold text-white mt-0.5">${reel.lineCapacity2 ? escapeHtml(reel.lineCapacity2) : '—'}</div>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+              <div class="text-[11px] font-mono text-slate-400">LINE CAPACITY 3</div>
+              <div class="text-base sm:text-lg font-mono font-bold text-white mt-0.5">${reel.lineCapacity3 ? escapeHtml(reel.lineCapacity3) : '—'}</div>
+            </div>
+          </div>
+
           ${reel.notes ? `
             <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
               <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
@@ -1659,7 +1698,9 @@ function parseBB(outerVal, innerVal, widthVal) {
       document.getElementById('copy-reel-spec-btn').onclick = () => {
         const lines = [
           `【${reel.brand} ${reel.model}】`,
-          `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`
+          `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`,
+          `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
+          `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`
         ];
         BAIT_BEARING_SLOTS.forEach(s => {
           const bb = reel.bearings?.[s.key];
@@ -2232,7 +2273,7 @@ function parseBB(outerVal, innerVal, widthVal) {
 
       document.getElementById('export-csv-btn').addEventListener('click', () => {
         if (!isSyncUnlocked) return;
-        const headers = ['type', 'brand', 'model', 'gearRatio', 'windingLength', 'spoolDia', 'spoolWidth', 'spoolWeightMain', 'spoolWeightSub', 'notes'];
+        const headers = ['type', 'brand', 'model', 'gearRatio', 'windingLength', 'spoolDia', 'spoolWidth', 'spoolWeightMain', 'spoolWeightSub', 'brakeType', 'reelWeight', 'castWeight', 'lineCapacity1', 'lineCapacity2', 'lineCapacity3', 'notes'];
         const csvLines = [headers.join(',')].concat(
           reelsDB.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))
         );
