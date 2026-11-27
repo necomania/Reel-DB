@@ -1693,207 +1693,193 @@ function parseBB(outerVal, innerVal, widthVal) {
 
 
 function renderBaitDetail(reel) {
-      const container = document.getElementById('bait-detail-container');
-      if (!reel) {
-        container.innerHTML = `
-          <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
-            条件に一致するベイトリールがありません。フィルタを解除してください。
-          </div>`;
-        return;
-      }
+  const container = document.getElementById('bait-detail-container');
+  if (!reel) {
+    container.innerHTML = `
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">
+        条件に一致するベイトリールがありません。フィルタを解除してください。
+      </div>`;
+    return;
+  }
 
-      const maxWind = calcMaxWinding(reel);
-      const isCompared = compareIds.includes(reel.id);
+  const maxWind = calcMaxWinding(reel);
+  const isCompared = compareIds.includes(reel.id);
 
-      // 画像の下に表示する NOTE（DATA(ベイト) のベアリング直前に追加した Q列 = reel.note）
-      const baitNoteHtml = reel.note
-        ? `
-          <div class="bg-slate-950/85 border border-cyan-500/30 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-200 flex items-start gap-2.5">
-            <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
-            <span class="whitespace-pre-line leading-relaxed">${escapeHtml(reel.note)}</span>
-          </div>`
-        : '';
+  // スピニング側と統一した NOTE ブロック（Q列 = reel.note を優先）
+  const baitNoteText = reel.note || '';
+  const baitNoteHtml = baitNoteText
+    ? `
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
+        <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-bold shrink-0 mt-0.5">NOTE</span>
+        <span class="whitespace-pre-line leading-relaxed">${escapeHtml(baitNoteText)}</span>
+      </div>
+    `
+    : '';
 
-      // リール画像がある場合のみ描画（画像プロパティ名に合わせて調整可能）
-      const reelImageUrl = reel.image || reel.imageUrl || '';
-      const imageAndNoteSectionHtml = reelImageUrl
-        ? `
-          <div class="space-y-3">
-            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-3 flex items-center justify-center">
-              <img
-                src="${escapeHtml(reelImageUrl)}"
-                alt="${escapeHtml(reel.brand)} ${escapeHtml(reel.model)}"
-                class="max-h-64 w-auto object-contain rounded-lg"
-                loading="lazy"
-              />
-            </div>
-            ${baitNoteHtml}
-          </div>`
-        : (baitNoteHtml ? `<div class="space-y-3">${baitNoteHtml}</div>` : '');
+  const bearingRowsHtml = BAIT_BEARING_SLOTS.map(slot => {
+    const bb = reel.bearings ? reel.bearings[slot.key] : null;
+    const spec = findBearingSpec(bb);
+    const dimText = formatBBDim(bb);
 
-      const bearingRowsHtml = BAIT_BEARING_SLOTS.map(slot => {
-        const bb = reel.bearings ? reel.bearings[slot.key] : null;
-        const spec = findBearingSpec(bb);
-        const dimText = formatBBDim(bb);
-
-        return `
-          <tr class="hover:bg-slate-850/70 transition-colors">
-            <td class="py-3.5 px-4">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
-                <div>
-                  <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
-                  <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
-                </div>
-              </div>
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">
-              ${escapeHtml(dimText)}
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs">
-              ${spec ? `<span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '<span class="text-slate-600">—</span>'}
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
-              ${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '<span class="text-slate-600">—</span>'}
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
-              ${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '<span class="text-slate-600">—</span>'}
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-300">
-              ${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '<span class="text-slate-600">—</span>'}
-            </td>
-          </tr>`;
-      }).join('');
-
-      container.innerHTML = `
-        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+    return `
+      <tr class="hover:bg-slate-850/70 transition-colors">
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono text-[11px]">${escapeHtml(slot.code)}</span>
             <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
-                <span class="text-xs font-mono text-slate-500">BAITCASTING</span>
-              </div>
-              <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" id="detail-compare-toggle" class="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                isCompared
-                  ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-                  : 'bg-slate-850 hover:bg-slate-800 border-slate-700 text-slate-300'
-              }">
-                ${isCompared ? '✓ 比較リスト追加済み' : '+ 比較リストに追加'}
-              </button>
-              <button type="button" id="copy-reel-spec-btn" class="px-3.5 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-xs text-cyan-300 font-semibold transition-colors">
-                スペックをコピー
-              </button>
+              <div class="font-semibold text-slate-100 text-xs sm:text-sm">${escapeHtml(slot.label)}</div>
+              <div class="text-[11px] text-slate-400">${escapeHtml(slot.jp)}</div>
             </div>
           </div>
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs sm:text-sm ${bb ? 'text-white font-semibold' : 'text-slate-600'}">
+          ${escapeHtml(dimText)}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs">
+          ${spec ? `<span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-semibold">${escapeHtml(spec.jis)}</span>` : '<span class="text-slate-600">—</span>'}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
+          ${spec ? `${escapeHtml(spec.nskOpen)} / <span class="text-cyan-300">${escapeHtml(spec.nskZZ)}</span>` : '<span class="text-slate-600">—</span>'}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-200">
+          ${spec ? `${escapeHtml(spec.nmbOpen)} / <span class="text-emerald-300">${escapeHtml(spec.nmbZZ)}</span>` : '<span class="text-slate-600">—</span>'}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-300">
+          ${spec ? `${escapeHtml(spec.ntnOpen)} / ${escapeHtml(spec.ntnZZ)}` : '<span class="text-slate-600">—</span>'}
+        </td>
+      </tr>`;
+  }).join('');
 
-          ${imageAndNoteSectionHtml}
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-cyan-400">MAX WINDING</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-cyan-300 mt-0.5 tabular-nums">${maxWind !== '—' ? maxWind + ' cm' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">SPOOL DIA</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolDia ? reel.spoolDia + ' mm' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-slate-400">SPOOL WIDTH</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolWidth ? reel.spoolWidth + ' mm' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-emerald-400">SPOOL (MAIN)</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightMain ? reel.spoolWeightMain + ' g' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-emerald-400">SPOOL (SUB)</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightSub ? reel.spoolWeightSub + ' g' : '—'}</div>
-            </div>
+  container.innerHTML = `
+    <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold">${escapeHtml(reel.brand)}</span>
+            <span class="text-xs font-mono text-slate-500">BAITCASTING</span>
           </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-violet-400">BRAKE TYPE</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5">${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-pink-400">REEL WEIGHT</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-pink-400 mt-0.5 tabular-nums">${reel.reelWeight != null ? reel.reelWeight + ' g' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-pink-400">CAST WEIGHT</div>
-              <div class="text-lg sm:text-xl font-mono font-bold text-pink-400 mt-0.5 tabular-nums">${reel.castWeight != null ? reel.castWeight + ' g' : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 1</div>
-              <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity1 ? escapeHtml(reel.lineCapacity1) : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 2</div>
-              <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity2 ? escapeHtml(reel.lineCapacity2) : '—'}</div>
-            </div>
-            <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-              <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 3</div>
-              <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity3 ? escapeHtml(reel.lineCapacity3) : '—'}</div>
-            </div>
-          </div>
-
-          ${reel.notes ? `
-            <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
-              <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
-              <span>${escapeHtml(reel.notes)}</span>
-            </div>` : ''}
+          <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">${escapeHtml(reel.model)}</h3>
         </div>
-
-        <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <h4 class="text-xs sm:text-sm font-bold text-white">部位別ベアリング寸法 ＆ 互換メーカー品番自動照合</h4>
-            <span class="text-[11px] text-slate-400">寸法表記: 外径(D) × 内径(d) × 幅(B)</span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                  <th class="py-3 px-4">部位コード / 名称</th>
-                  <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
-                  <th class="py-3 px-4">JIS呼び番号</th>
-                  <th class="py-3 px-4">NSK (開放 / ZZ)</th>
-                  <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
-                  <th class="py-3 px-4">NTN (開放 / ZZ)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/70">${bearingRowsHtml}</tbody>
-            </table>
-          </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="detail-compare-toggle" class="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            isCompared
+              ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+              : 'bg-slate-850 hover:bg-slate-800 border-slate-700 text-slate-300'
+          }">
+            ${isCompared ? '✓ 比較リスト追加済み' : '+ 比較リストに追加'}
+          </button>
+          <button type="button" id="copy-reel-spec-btn" class="px-3.5 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-xs text-cyan-300 font-semibold transition-colors">
+            スペックをコピー
+          </button>
         </div>
-      `;
+      </div>
 
-      document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
-      document.getElementById('copy-reel-spec-btn').onclick = () => {
-        const lines = [
-          `【${reel.brand} ${reel.model}】`,
-          `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`,
-          `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
-          `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`
-        ];
-        if (reel.note) lines.push(`NOTE: ${reel.note}`);
-        BAIT_BEARING_SLOTS.forEach(s => {
-          const bb = reel.bearings?.[s.key];
-          if (bb && (bb.outer || bb.inner || bb.width)) {
-            const spec = findBearingSpec(bb);
-            lines.push(`・${s.label} (${s.code}): ${formatBBDim(bb)}${spec ? ` [${spec.jis} / ${spec.nmbZZ}]` : ''}`);
-          }
-        });
-        copyTextToClipboard(lines.join('\n'), '機種スペックとベアリング一覧をコピーしました');
-      };
-    }
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">GEAR RATIO</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.gearRatio ? Number(reel.gearRatio).toFixed(1) + ':1' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-cyan-400">MAX WINDING</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-cyan-300 mt-0.5 tabular-nums">${maxWind !== '—' ? maxWind + ' cm' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">SPOOL DIA</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolDia ? reel.spoolDia + ' mm' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-slate-400">SPOOL WIDTH</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolWidth ? reel.spoolWidth + ' mm' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-emerald-400">SPOOL (MAIN)</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightMain ? reel.spoolWeightMain + ' g' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-emerald-400">SPOOL (SUB)</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightSub ? reel.spoolWeightSub + ' g' : '—'}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-violet-400">BRAKE TYPE</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5">${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-pink-400">REEL WEIGHT</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-pink-400 mt-0.5 tabular-nums">${reel.reelWeight != null ? reel.reelWeight + ' g' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-pink-400">CAST WEIGHT</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-pink-400 mt-0.5 tabular-nums">${reel.castWeight != null ? reel.castWeight + ' g' : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 1</div>
+          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity1 ? escapeHtml(reel.lineCapacity1) : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 2</div>
+          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity2 ? escapeHtml(reel.lineCapacity2) : '—'}</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 3</div>
+          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity3 ? escapeHtml(reel.lineCapacity3) : '—'}</div>
+        </div>
+      </div>
+
+      <!-- 追加した NOTE 枠（画像を表示する場合は <img ... /> の直下に移動してください） -->
+      ${baitNoteHtml}
+
+      ${reel.notes ? `
+        <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
+          <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
+          <span>${escapeHtml(reel.notes)}</span>
+        </div>` : ''}
+    </div>
+
+    <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+        <h4 class="text-xs sm:text-sm font-bold text-white">部位別ベアリング寸法 ＆ 互換メーカー品番自動照合</h4>
+        <span class="text-[11px] text-slate-400">寸法表記: 外径(D) × 内径(d) × 幅(B)</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              <th class="py-3 px-4">部位コード / 名称</th>
+              <th class="py-3 px-4">実測寸法 (外×内×幅)</th>
+              <th class="py-3 px-4">JIS呼び番号</th>
+              <th class="py-3 px-4">NSK (開放 / ZZ)</th>
+              <th class="py-3 px-4">Minebea (開放 / ZZ)</th>
+              <th class="py-3 px-4">NTN (開放 / ZZ)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/70">${bearingRowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
+  document.getElementById('copy-reel-spec-btn').onclick = () => {
+    const lines = [
+      `【${reel.brand} ${reel.model}】`,
+      `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`,
+      `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
+      `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`
+    ];
+    if (reel.note) lines.push(`NOTE: ${reel.note}`);
+    BAIT_BEARING_SLOTS.forEach(s => {
+      const bb = reel.bearings?.[s.key];
+      if (bb && (bb.outer || bb.inner || bb.width)) {
+        const spec = findBearingSpec(bb);
+        lines.push(`・${s.label} (${s.code}): ${formatBBDim(bb)}${spec ? ` [${spec.jis} / ${spec.nmbZZ}]` : ''}`);
+      }
+    });
+    copyTextToClipboard(lines.join('\n'), '機種スペックとベアリング一覧をコピーしました');
+  };
+}
 
     /**
      * 12. 機種比較ロジック
