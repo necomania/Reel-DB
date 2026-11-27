@@ -1829,38 +1829,71 @@ function parseBB(outerVal, innerVal, widthVal) {
     }
 
 
-		function updateSpinningModelDropdown() {
-		  const brandVal = document.getElementById('spin-brand-select').value;
-		 const filtered = reelsDB.filter(r =>
-  r.type === 'spinning' &&
-  (brandVal === 'ALL' || r.brand === brandVal)
-).sort(compareModelNames);
-		  const modelSelect = document.getElementById('spin-model-select');
 
-		  if (filtered.length === 0) {
-		    modelSelect.innerHTML = '<option value="">スピニングリールデータがありません</option>';
-		    renderSpinningDetail(null);
-		    return;
-		  }
+function updateSpinningModelDropdown() {
+  const brandVal = document.getElementById('spin-brand-select').value;
 
-		  // 機種名の先頭に「選択しない」を追加
-		  modelSelect.innerHTML =
-		    '<option value="">選択しない</option>' +
-		    filtered.map(r =>
-		      `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`
-		    ).join('');
+  const filtered = reelsDB.filter(r =>
+    r.type === 'spinning' &&
+    (brandVal === 'ALL' || r.brand === brandVal)
+  ).sort(compareModelNames);
 
-		  // 初期状態は機種未選択
-		  if (!filtered.some(r => r.id === selectedSpinId)) {
-		    selectedSpinId = '';
-		  }
+  const modelSelect = document.getElementById('spin-model-select');
+  const pillsContainer = document.getElementById('spin-quick-pills');
+  const matchCount = document.getElementById('spin-match-count');
 
-		  modelSelect.value = selectedSpinId;
+  matchCount.textContent = filtered.length;
 
-		  // 未選択なら詳細を表示しない
-		  const currentReel = filtered.find(r => r.id === selectedSpinId) || null;
-		  renderSpinningDetail(currentReel);
-		}
+  if (filtered.length === 0) {
+    modelSelect.innerHTML = '<option value="">スピニングリールデータがありません</option>';
+    pillsContainer.innerHTML = '<span class="text-xs text-slate-500">該当なし</span>';
+    renderSpinningDetail(null);
+    return;
+  }
+
+  // 機種名の先頭に「選択しない」を追加
+  modelSelect.innerHTML =
+    '<option value="">選択しない</option>' +
+    filtered.map(r =>
+      `<option value="${escapeHtml(r.id)}">${escapeHtml(r.model)}</option>`
+    ).join('');
+
+  // 初期状態は機種未選択
+  if (!filtered.some(r => r.id === selectedSpinId)) {
+    selectedSpinId = '';
+  }
+
+  modelSelect.value = selectedSpinId;
+
+  // クイック選択ボタン
+  pillsContainer.innerHTML = filtered.slice(0, 30).map(r => {
+    const active = r.id === selectedSpinId;
+
+    return `<button type="button"
+      data-select-spin="${escapeHtml(r.id)}"
+      class="px-2.5 py-1 rounded-lg text-xs whitespace-nowrap border transition-all ${
+        active
+          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold'
+          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+      }">
+      ${escapeHtml(r.model)}
+    </button>`;
+  }).join('');
+
+  // 未選択なら詳細を表示しない
+  const currentReel = filtered.find(r => r.id === selectedSpinId) || null;
+  renderSpinningDetail(currentReel);
+
+  // 候補機種のクリックイベント
+  pillsContainer.querySelectorAll('[data-select-spin]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedSpinId = btn.getAttribute('data-select-spin');
+      modelSelect.value = selectedSpinId;
+      updateSpinningModelDropdown();
+    });
+  });
+}
+
 
     function renderSpinningDetail(reel) {
       const container = document.getElementById('spin-detail-container');
