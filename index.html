@@ -1971,7 +1971,22 @@ const formatSpoolWeightDisplay = (value) => {
       </div>
     </div>
   `;
+	// BRAKE TYPE：カード幅に合わせて文字サイズを自動調整
+container.querySelectorAll('.brake-type-auto-fit').forEach(el => {
+  const maxFontSize = 20;
+  const minFontSize = 8;
 
+  el.style.fontSize = maxFontSize + 'px';
+
+  while (
+    el.scrollWidth > el.clientWidth &&
+    parseFloat(el.style.fontSize) > minFontSize
+  ) {
+    el.style.fontSize =
+      (parseFloat(el.style.fontSize) - 0.5) + 'px';
+  }
+});
+	
   document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
   document.getElementById('copy-reel-spec-btn').onclick = () => {
 const lines = [
