@@ -1543,6 +1543,18 @@ function parseBB(outerVal, innerVal, widthVal) {
 
         const data = await res.json();
 
+		// NOTE受信状況の調査用
+console.log('スピニングNOTE受信確認:',
+  data.reels
+    .filter(reel => reel.type === 'spinning')
+    .map(reel => ({
+      brand: reel.brand,
+      model: reel.model,
+      note: reel.note
+    }))
+);
+		  
+
         if (!data || !Array.isArray(data.reels) || data.reels.length === 0) {
           throw new Error('JSON内に有効なreels配列がありません');
         }
