@@ -1792,17 +1792,37 @@ function renderBaitDetail(reel) {
           <div class="text-[11px] font-mono text-slate-400">SPOOL WIDTH</div>
           <div class="text-lg sm:text-xl font-mono font-bold text-white mt-0.5 tabular-nums">${reel.spoolWidth ? reel.spoolWidth + ' mm' : '—'}</div>
         </div>
-        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-emerald-400">SPOOL (MAIN)</div>
-          <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightMain !== undefined && reel.spoolWeightMain !== null && reel.spoolWeightMain !== ''
-  ? String(reel.spoolWeightMain).replace(/^(\s*[約≈]?\d+(?:\.\d+)?)(.*)$/, '$1g$2')
-  : '—'}</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-emerald-400">SPOOL (SUB)</div>
-          <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">${reel.spoolWeightSub !== undefined && reel.spoolWeightSub !== null && reel.spoolWeightSub !== ''
-  ? String(reel.spoolWeightSub).replace(/^(\s*[約≈]?\d+(?:\.\d+)?)(.*)$/, '$1g$2')
-  : '—'}</div>
+			<div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+			  <div class="text-[11px] font-mono text-emerald-400">
+			    SPOOL (MAIN)
+			  </div>
+			  <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">
+			    ${reel.spoolWeightMain !== undefined &&
+			      reel.spoolWeightMain !== null &&
+			      reel.spoolWeightMain !== ''
+			        ? String(reel.spoolWeightMain).replace(
+			            /^(\s*[約≈]?\d+(?:\.\d+)?)(.*)$/,
+			            '$1g$2'
+			          )
+			        : '—'}
+			  </div>
+			</div>
+			
+			<div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+			  <div class="text-[11px] font-mono text-emerald-400">
+			    SPOOL (SUB)
+			  </div>
+			  <div class="text-lg sm:text-xl font-mono font-bold text-emerald-300 mt-0.5 tabular-nums">
+			    ${reel.spoolWeightSub !== undefined &&
+			      reel.spoolWeightSub !== null &&
+			      reel.spoolWeightSub !== ''
+			        ? String(reel.spoolWeightSub).replace(
+			            /^(\s*[約≈]?\d+(?:\.\d+)?)(.*)$/,
+			            '$1g$2'
+			          )
+			        : '—'}
+			  </div>
+			</div>
         </div>
       </div>
 
