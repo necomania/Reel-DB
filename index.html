@@ -1374,17 +1374,18 @@ function parseBB(outerVal, innerVal, widthVal) {
           lineCapacity1: String(row[12] ?? '').trim(),
           lineCapacity2: String(row[13] ?? '').trim(),
           lineCapacity3: String(row[14] ?? '').trim(),
+		  note: String(row[15] || '').trim(), // Q列（ベアリング直前に追加したNOTE）
           bearings: {
-            spool:       parseBB(row[15], row[16], row[17]),
-            sideCover:   parseBB(row[18], row[19], row[20]),
-            pinionOuter: parseBB(row[21], row[22], row[23]),
-            clutchCam:   parseBB(row[24], row[25], row[26]),
-            handle:      parseBB(row[27], row[28], row[29]),
-            gearShaft:   parseBB(row[30], row[31], row[32]),
-            wormGear:    parseBB(row[33], row[34], row[35]),
-            wormCover:   parseBB(row[36], row[37], row[38])
+            spool:       parseBB(row[16], row[17], row[18]),
+            sideCover:   parseBB(row[19], row[20], row[21]),
+            pinionOuter: parseBB(row[22], row[23], row[24]),
+            clutchCam:   parseBB(row[25], row[26], row[27]),
+            handle:      parseBB(row[28], row[29], row[30]),
+            gearShaft:   parseBB(row[31], row[32], row[33]),
+            wormGear:    parseBB(row[34], row[35], row[36]),
+            wormCover:   parseBB(row[37], row[38], row[39])
           },
-          notes: String(row[39] ?? '').trim()
+          notes: String(row[40] ?? '').trim()
         });
       }
       return result;
