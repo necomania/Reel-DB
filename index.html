@@ -1904,12 +1904,7 @@ function renderBaitDetail(reel) {
       <!-- 追加した NOTE 枠（画像を表示する場合は <img ... /> の直下に移動してください） -->
       ${baitNoteHtml}
 
-      ${reel.note ? `
-        <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
-          <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
-          <span>${escapeHtml(reel.note)}</span>
-        </div>` : ''}
-    </div>
+
 
     <div class="bg-slate-900/95 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
       <div class="px-5 py-3.5 bg-slate-850 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
@@ -1936,12 +1931,13 @@ function renderBaitDetail(reel) {
 
   document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
   document.getElementById('copy-reel-spec-btn').onclick = () => {
-    const lines = [
-      `【${reel.brand} ${reel.model}】`,
-      `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${reel.spoolWeightMain || '-'}g)`,
-      `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
-      `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`
-    ];
+const lines = [
+  `【${reel.brand} ${reel.model}】`,
+  `ギア比: ${reel.gearRatio || '-'} / 巻上長: ${maxWind}cm / スプール: ${reel.spoolDia || '-'}×${reel.spoolWidth || '-'}mm (${formatSpoolWeight(reel.spoolWeightMain) || '-'})`,
+  `Brake Type: ${reel.brakeType || '-'} / Reel Weight: ${reel.reelWeight ?? '-'}g / Cast Weight: ${reel.castWeight ?? '-'}g`,
+  `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`,
+  ...(reel.note ? [`NOTE: ${reel.note}`] : [])
+];
     if (reel.note) lines.push(`NOTE: ${reel.note}`);
     BAIT_BEARING_SLOTS.forEach(s => {
       const bb = reel.bearings?.[s.key];
