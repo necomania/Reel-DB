@@ -1747,6 +1747,8 @@ function formatSpoolWeight(value) {
 	  
 
 function renderBaitDetail(reel) {
+
+  console.log('ベイトNOTE確認:', reel?.note, reel);
   const container = document.getElementById('bait-detail-container');
   if (!reel) {
     container.innerHTML = `
