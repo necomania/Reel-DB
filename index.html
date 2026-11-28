@@ -1917,9 +1917,10 @@ const formatSpoolWeightDisplay = (value) => {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
         <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
           <div class="text-[11px] font-mono text-violet-400">BRAKE TYPE</div>
-          <div class="brake-type-auto-fit text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5 whitespace-nowrap overflow-hidden" style="font-size: 20px;">
- 		 ${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}
-	</div>
+		<div class="brake-type-auto-fit text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5 overflow-hidden"
+		     style="font-size: 20px; white-space: pre-wrap; overflow-wrap: anywhere;">
+		  ${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}
+		</div>
         </div>
         <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
           <div class="text-[11px] font-mono text-pink-400">REEL WEIGHT</div>
@@ -1970,21 +1971,24 @@ const formatSpoolWeightDisplay = (value) => {
       </div>
     </div>
   `;
-	// BRAKE TYPE：カード幅に合わせて文字サイズを自動調整
-container.querySelectorAll('.brake-type-auto-fit').forEach(el => {
-  const maxFontSize = 20;
-  const minFontSize = 8;
-
-  el.style.fontSize = maxFontSize + 'px';
-
-  while (
-    el.scrollWidth > el.clientWidth &&
-    parseFloat(el.style.fontSize) > minFontSize
-  ) {
-    el.style.fontSize =
-      (parseFloat(el.style.fontSize) - 0.5) + 'px';
-  }
-});
+		// BRAKE TYPE：改行を維持しながらカード幅に合わせて文字サイズを調整
+		container.querySelectorAll('.brake-type-auto-fit').forEach(el => {
+		  const maxFontSize = 20;
+		  const minFontSize = 8;
+		
+		  el.style.fontSize = maxFontSize + 'px';
+		
+		  while (
+		    el.scrollHeight > el.clientHeight + 1 ||
+		    el.scrollWidth > el.clientWidth + 1
+		  ) {
+		    const currentSize = parseFloat(el.style.fontSize);
+		
+		    if (currentSize <= minFontSize) break;
+		
+		    el.style.fontSize = Math.max(minFontSize, currentSize - 0.5) + 'px';
+		  }
+		});
 	
   document.getElementById('detail-compare-toggle').onclick = () => toggleCompareId(reel.id);
   document.getElementById('copy-reel-spec-btn').onclick = () => {
