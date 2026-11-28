@@ -1543,6 +1543,20 @@ function parseBB(outerVal, innerVal, widthVal) {
 
         const data = await res.json();
 
+		  // GASから受信したNOTEを直接確認
+console.log('GAS受信NOTE確認:', 
+  data.reels
+    .filter(r => r.type === 'bait' || r.type === 'spinning')
+    .slice(0, 10)
+    .map(r => ({
+      type: r.type,
+      brand: r.brand,
+      model: r.model,
+      note: r.note,
+      keys: Object.keys(r)
+    }))
+);
+
 		// NOTE受信状況の調査用
 console.log('スピニングNOTE受信確認:',
   data.reels
