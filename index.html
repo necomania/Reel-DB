@@ -1904,10 +1904,10 @@ function renderBaitDetail(reel) {
       <!-- 追加した NOTE 枠（画像を表示する場合は <img ... /> の直下に移動してください） -->
       ${baitNoteHtml}
 
-      ${reel.notes ? `
+      ${reel.note ? `
         <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-300 flex items-start gap-2.5">
           <span class="text-cyan-400 font-mono text-xs mt-0.5 shrink-0">NOTE:</span>
-          <span>${escapeHtml(reel.notes)}</span>
+          <span>${escapeHtml(reel.note)}</span>
         </div>` : ''}
     </div>
 
