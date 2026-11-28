@@ -1928,18 +1928,23 @@ const formatSpoolWeightDisplay = (value) => {
           <div class="text-[11px] font-mono text-pink-400">CAST WEIGHT</div>
           <div class="text-lg sm:text-xl font-mono font-bold text-pink-400 mt-0.5 tabular-nums">${reel.castWeight != null ? reel.castWeight + ' g' : '—'}</div>
         </div>
-        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 1</div>
-          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity1 ? escapeHtml(reel.lineCapacity1) : '—'}</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 2</div>
-          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity2 ? escapeHtml(reel.lineCapacity2) : '—'}</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
-          <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 3</div>
-          <div class="text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5">${reel.lineCapacity3 ? escapeHtml(reel.lineCapacity3) : '—'}</div>
-        </div>
+		<div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+		  <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 1</div>
+		  <div class="line-capacity-auto-fit text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5 overflow-hidden"
+		       style="font-size: 20px; white-space: pre-wrap; overflow-wrap: anywhere;">${reel.lineCapacity1 ? escapeHtml(reel.lineCapacity1) : '—'}</div>
+		</div>
+		
+		<div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+		  <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 2</div>
+		  <div class="line-capacity-auto-fit text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5 overflow-hidden"
+		       style="font-size: 20px; white-space: pre-wrap; overflow-wrap: anywhere;">${reel.lineCapacity2 ? escapeHtml(reel.lineCapacity2) : '—'}</div>
+		</div>
+		
+		<div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
+		  <div class="text-[11px] font-mono text-yellow-400">LINE CAPACITY 3</div>
+		  <div class="line-capacity-auto-fit text-base sm:text-lg font-mono font-bold text-yellow-400 mt-0.5 overflow-hidden"
+		       style="font-size: 20px; white-space: pre-wrap; overflow-wrap: anywhere;">${reel.lineCapacity3 ? escapeHtml(reel.lineCapacity3) : '—'}</div>
+		</div>
       </div>
 
       <!-- 追加した NOTE 枠（画像を表示する場合は <img ... /> の直下に移動してください） -->
@@ -1971,6 +1976,24 @@ const formatSpoolWeightDisplay = (value) => {
   `;
 		// BRAKE TYPE：改行を維持しながらカード幅に合わせて文字サイズを調整
 		container.querySelectorAll('.brake-type-auto-fit').forEach(el => {
+		  const maxFontSize = 20;
+		  const minFontSize = 8;
+		
+		  el.style.fontSize = maxFontSize + 'px';
+		
+		  while (
+		    el.scrollHeight > el.clientHeight + 1 ||
+		    el.scrollWidth > el.clientWidth + 1
+		  ) {
+		    const currentSize = parseFloat(el.style.fontSize);
+		
+		    if (currentSize <= minFontSize) break;
+		
+		    el.style.fontSize = Math.max(minFontSize, currentSize - 0.5) + 'px';
+		  }
+		});
+			// LINE CAPACITY 1〜3：改行を維持しながら文字サイズを自動調整
+		container.querySelectorAll('.line-capacity-auto-fit').forEach(el => {
 		  const maxFontSize = 20;
 		  const minFontSize = 8;
 		
