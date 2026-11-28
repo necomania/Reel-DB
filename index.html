@@ -1786,6 +1786,18 @@ function renderBaitDetail(reel) {
 
   const maxWind = calcMaxWinding(reel);
   const isCompared = compareIds.includes(reel.id);
+// スプール重量：gの後ろに文字列があれば改行
+const formatSpoolWeightDisplay = (value) => {
+  const formatted = String(formatSpoolWeight(value) ?? '');
+  const match = formatted.match(/^([\s\S]*?[gｇＧ])\s*(\S[\s\S]*)$/);
+
+  if (match) {
+    return `${escapeHtml(match[1])}<br>${escapeHtml(match[2])}`;
+  }
+
+  return escapeHtml(formatted);
+};
+	
 
 // 空欄でも常に表示する NOTE ブロック（空のときは「—」）
   const baitNoteDisplay = reel.note
@@ -1882,7 +1894,7 @@ function renderBaitDetail(reel) {
 		    ${reel.spoolWeightMain !== undefined &&
   reel.spoolWeightMain !== null &&
   String(reel.spoolWeightMain).trim() !== ''
-    ? formatSpoolWeight(reel.spoolWeightMain)
+    ? formatSpoolWeightDisplay(reel.spoolWeightMain)
     : '—'}
 		  </div>
 		</div>
@@ -1895,7 +1907,7 @@ function renderBaitDetail(reel) {
 		    ${reel.spoolWeightSub !== undefined &&
   reel.spoolWeightSub !== null &&
   String(reel.spoolWeightSub).trim() !== ''
-    ? formatSpoolWeight(reel.spoolWeightSub)
+    ? formatSpoolWeightDisplay(reel.spoolWeightSub)
     : '—'}
 		  </div>
 		</div>
@@ -1905,7 +1917,7 @@ function renderBaitDetail(reel) {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
         <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
           <div class="text-[11px] font-mono text-violet-400">BRAKE TYPE</div>
-          <div class="text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5">${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}</div>
+          <div class="text-lg sm:text-xl font-mono font-bold text-violet-300 mt-0.5 whitespace-pre-line">${reel.brakeType ? escapeHtml(reel.brakeType) : '—'}</div>
         </div>
         <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl p-3.5">
           <div class="text-[11px] font-mono text-pink-400">REEL WEIGHT</div>
