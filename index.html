@@ -1952,7 +1952,6 @@ const lines = [
   `Line Capacity 1: ${reel.lineCapacity1 || '-'} / 2: ${reel.lineCapacity2 || '-'} / 3: ${reel.lineCapacity3 || '-'}`,
   ...(reel.note ? [`NOTE: ${reel.note}`] : [])
 ];
-    if (reel.note) lines.push(`NOTE: ${reel.note}`);
     BAIT_BEARING_SLOTS.forEach(s => {
       const bb = reel.bearings?.[s.key];
       if (bb && (bb.outer || bb.inner || bb.width)) {
@@ -2136,7 +2135,8 @@ function updateSpinningModelDropdown() {
 }
 
 function renderSpinningDetail(reel) {
-  const container = document.getElementById('spin-detail-container');
+console.log('スピニングNOTE確認:', reel?.note, reel);
+	const container = document.getElementById('spin-detail-container');
 
   if (!reel) {
     container.innerHTML = '<div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-10 text-center text-slate-400">スピニングリールデータがありません。</div>';
