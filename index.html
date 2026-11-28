@@ -757,8 +757,8 @@ function doGet(e) {
         windingLength: parseNum(row[4]),
         spoolDia: parseNum(row[5]),
         spoolWidth: parseNum(row[6]),
-        spoolWeightMain: parseNum(row[7]),
-        spoolWeightSub: parseNum(row[8]),
+        spoolWeightMain: String(row[7]|| '').trim(),
+        spoolWeightSub: String(row[8]|| '').trim(),
         brakeType: String(row[9] || '').trim(), // K列
         reelWeight: parseNum(row[10]), // L列
         castWeight: parseNum(row[11]), // M列
